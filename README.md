@@ -2,6 +2,8 @@
 
 Python contracts, bounded Historical verification, Live Signing Status and a companion integration foundation for Frigate v0.18.0. A read-only SQLite adapter stages retained media for the existing finite Toolkit backend. Explicit playback/rendition mapping, nonblocking observation sources, durable jobs and a local programmatic service boundary prepare later Frigate-native desktop integration. A private GET-only Live transport supports a separate version-bound Frigate authentication relay. The separate pinned Frigate desktop patch displays Live Signing Status on the [validated desktop surfaces](docs/support-matrix.md). No installation package is provided.
 
+The pinned desktop patch also offers retained-recording Historical Verification from single-camera Review/Export, with durable jobs and evidence access; see the [support matrix](docs/support-matrix.md). This does not verify exported MP4 files.
+
 Python 3.11+; standard library only. Run the targeted tests from the repository root:
 
 ```sh

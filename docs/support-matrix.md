@@ -45,3 +45,24 @@ native video fullscreen (including iOS native fullscreen/overlay), debug/setting
 previews, and replay/playground. This desktop Live profile makes no claims for
 Historical UI, Review verification, EventView, Motion Search, Explore, snapshots,
 batch workflows or exported-file verification.
+
+## Historical Verification — desktop Review/Export
+
+The same **Frigate v0.18.0 / validated profile `0.18.0-77a66e7`** supports:
+
+- Desktop `/review`, one selected recording camera, and the existing Export dialog.
+- **Custom** selection of explicit start/end times, with the same rounded Unix-second bounds submitted by native Export. Requests are half-open `[start, end)`.
+- An optional **Verify retained signed recording** action, independent of native Export submission and success.
+- Durable companion verification jobs, restoration of the latest job for a selected range through Frigate's per-user browser storage, and evidence summary/download through camera-authorized routes.
+
+Historical Verification applies to the **original retained signed recording material corresponding to the selected range**. It does **not** verify the exported MP4, assert byte identity with it, or label that file authentic. Exported-file verification needs a separate future artifact-binding contract.
+
+Job lifecycle is separate from Verification Result (`VALID`, `PARTIAL`, `INVALID`, `UNKNOWN`). Metadata Coverage (`FULL`, `NOT_FULL`, `INDETERMINATE`), Requested-Range Coverage (`FULL`, `INDETERMINATE`), actual verification context, and evidence are displayed separately. FULL metadata does not establish complete verification context. Infrastructure failures do not become media INVALID; queued/running jobs have no media verdict.
+
+The companion retains jobs and evidence. Existing Frigate per-user IndexedDB stores the latest association for each camera/range, bounded to sixteen associations. Clearing that browser storage removes its restoration references. An explicit new verification replaces that range's displayed job with a new execution; refresh/reopen only queries the saved job. Terminal jobs stop periodic polling. Native export status is queried separately, including its durable completed Export record when the queued-job record is unavailable.
+
+Reference acceptance used preserved real signed C210/Gateway H.264 replay retained by Frigate. It exercised an actual completed INVALID result with FULL metadata and INDETERMINATE requested-range coverage, plus a recording-gap UNKNOWN result with NOT_FULL metadata. Neither outcome was manufactured by altering media. All four verdict displays are covered by focused tests. Normal password authentication, independent native export, evidence view/download, dialog reopen, page refresh/window reopen, companion outage and completed-job restoration after companion restart were exercised. Fresh hardware qualification, a full browser-process restart, and other browser engines were not qualified by this run.
+
+Historical workflows deferred/unsupported: all Mobile Export; EventView and ReviewCard quick export; batch and multi-camera export; Motion Search; Explore clip/download; retrospective verification of existing exports; snapshots; continuous/background verification; automatic per-segment annotations; exported-file verification; standalone Historical dashboards. No Historical feature is enabled at those entry points.
+
+See the [bounded Historical transport](historical-transport.md) for the private deployment boundary and response limits.
