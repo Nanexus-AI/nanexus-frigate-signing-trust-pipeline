@@ -1,6 +1,6 @@
 # Companion integration foundation
 
-This foundation targets only Frigate **v0.18.0** (`77a66e75c61862b048a07c1295877f4b31343504`). It supplies backend infrastructure for later desktop Frigate-native integration. It includes no browser page, Frigate patch, network listener, installation package or release qualification. Python 3.11+ and POSIX file descriptors/permissions are required; standard library only.
+This foundation targets only Frigate **v0.18.0** (`77a66e75c61862b048a07c1295877f4b31343504`). It supplies backend infrastructure for later desktop Frigate-native integration. It includes no browser page, installation package or release qualification. An optional [private Live transport](live-transport.md) and separate Frigate authentication relay provide read-only browser support infrastructure. Python 3.11+ and POSIX file descriptors/permissions are required; standard library only.
 
 ## Read-only recording access
 
@@ -34,7 +34,7 @@ Completed job/result/evidence persists across companion or Frigate restart. Evid
 
 ## Local service boundary
 
-`CompanionService(live_scheduler, job_store, cameras)` is a **programmatic local boundary**, selected to avoid premature HTTP/auth infrastructure. One configured deployment principal has an explicit logical-camera allowlist. Its operations are:
+`CompanionService(live_scheduler, job_store, cameras)` is a **programmatic local boundary**. The optional private Live transport delegates to this interface without adding Historical routes. One configured deployment principal has an explicit logical-camera allowlist. Its operations are:
 
 | Method | Returned data |
 |---|---|
@@ -49,7 +49,7 @@ Completed job/result/evidence persists across companion or Frigate restart. Evid
 
 Result dataclasses serialize as dictionaries; identity fields inside Historical results retain their `{value: ...}` structure. Live uses its existing `to_dict` with decimal age strings. Readiness does not attest Frigate connectivity, media readiness or cryptographic validity. The caller must start/drive the Live scheduler and job worker explicitly. Queries use locks and bounded reads; long Historical execution runs outside the query lock.
 
-No endpoint or filesystem path is accepted from the UI-facing boundary; paths in deployment profiles are operator configuration. A future thin HTTP/proxy adapter must authenticate users, apply appropriate camera allowlists, cap request bodies and protect cookie mutations with CSRF controls. Frigate cookies do not automatically authenticate this service. Opaque IDs are not bearer authorization. Keep the service private; never expose unauthenticated Frigate port5000. Use scoped authenticated configuration access and separately provision secrets outside API/logs/evidence. No signing private keys belong here.
+No endpoint or filesystem path is accepted from the UI-facing boundary; paths in deployment profiles are operator configuration. The separate Frigate Live relay authenticates users and enforces existing camera authorization before forwarding to the private companion. Any later mutating transport would require separate request-body and CSRF review. Frigate cookies do not automatically authenticate this service. Opaque IDs are not bearer authorization. Keep the service private; never expose unauthenticated Frigate port5000. Use scoped authenticated configuration access and separately provision secrets outside API/logs/evidence. No signing private keys belong here.
 
 ## Validation limits
 
