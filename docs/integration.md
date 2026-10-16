@@ -1,0 +1,56 @@
+# Companion integration foundation
+
+This foundation targets only Frigate **v0.18.0** (`77a66e75c61862b048a07c1295877f4b31343504`). It supplies backend infrastructure for later desktop Frigate-native integration. It includes no browser page, Frigate patch, network listener, installation package or release qualification. Python 3.11+ and POSIX file descriptors/permissions are required; standard library only.
+
+## Read-only recording access
+
+`frigate.retained.FrigateRetainedSource` takes the operator-configured database location, read-only media root, private companion scratch root, requested `Interval`, explicit version and Frigate-side recordings mount prefix. `companion.HistoricalProfile.service` composes it with the existing `HistoricalService` and supplied finite executor, public trust configuration identity and evidence destination.
+
+Use the **actual shared database directory**, including existing `-wal` and `-shm`, mounted read-only. Prefer a dedicated directory selected with supported Frigate `database.path`, rather than sharing configuration secrets. Media must also be mounted read-only. The companion requires no Frigate write permission. SQLite 3.22+ supports read-only WAL with readable existing sidecars; the implementation uses `mode=ro`, `query_only`, a bounded read transaction and no `immutable=1`, backup copy, migration or checkpoint. Missing sidecars for a WAL-header database are rejected before SQLite opens it. An arbitrary copied DB cannot establish snapshot provenance: main-file-only copies and manually assembled sidecars are unsupported. A genuine quiescent, standalone rollback-journal DB is usable; hot journals/recovery requiring writes fail conservatively.
+
+The adapter requires the exact Recordings column/type profile and primary key from this version. The version is explicitly declared by trusted deployment configuration, not discovered over an unauthenticated network. This guard does not authenticate a Frigate instance or guarantee future versions. It bounds SQLite values, query time, rows, forward candidates, per-file bytes and total staged bytes. Unknown schema/access failures remain metadata errors. It never reconstructs rows from filenames. Requested bounds use the existing decimal Unix UTC second strings and half-open intervals; Frigate numeric timestamps are conservatively normalized without accepting unsupported precision.
+
+A transaction freezes index reads, not retention. The adapter stages complete retained files under a new request-owned temporary directory, opening path components with `O_NOFOLLOW` and directory descriptors. Traversal, alternate mount roots and symlink components are rejected or unavailable. Stable files must satisfy a configurable minimum stability age (default one second), regular/nonempty checks and matching device/inode/size/mtime/ctime/link state before/after copying and reopening the retained path. Missing, changing, recently written or inaccessible files remain conservative readiness failures; they never become cryptographic INVALID. Copies are hash-checked when read and remain usable if retention later deletes originals. Closing the request deletes only its own scratch directory. Stability does not prove signed GOP closure or recording completeness; existing bounded Historical verification/forward expansion decides those outcomes.
+
+The bounded SQL inventory contains every requested overlap and the configured number of forward candidates that fit the file limit, plus at most one un-staged lookahead descriptor. That lookahead preserves the distinction between resource-limited expansion and true media exhaustion in the existing backend. Requests exceeding inventory bounds fail conservatively. Metadata coverage describes indexed retained intervals in the coherent snapshot, not all camera output. No timestamp clipping, retention changes or Frigate media deletion occurs.
+
+## Playback mapping and Live ownership
+
+`PlaybackMapping(frigate_camera, stream, context, binding)` explicitly associates the actual selected stream/playback context with `Binding(CameraId, RenditionId, source_id, revision, policy)`. Context names are configured logical identifiers such as `grid` or `single`; no UI is implemented. Same camera does not imply same rendition. Identical bindings may serve multiple explicit contexts; conflicting logical bindings and duplicate playback keys fail UNKNOWN.
+
+`LiveScheduler` serializes configuration, queries, bounded ticks, reconnects and shutdown. It supports explicit `tick()` driving or one timer thread via `start()`. Mapping/source revisions and selected-context/rendition changes retire prior freshness. Explicit `reconnect(camera, rendition)` replaces the source generation. EOF/error yields UNKNOWN, then tick resets the binding for a new source. Late calls to retired sources return no observations. Existing M1-C policies/parser/session semantics are unchanged.
+
+`FDObservationSource` takes exclusive ownership of an already provisioned compressed Annex-B file descriptor, sets it nonblocking, reads at most 65,536 bytes per event, stamps a fresh generation and closes on EOF/error/shutdown. It has no input queue, network URLs, credentials or subprocess. A deployment-owned source factory must immediately return a ready nonblocking source or raise `OSError`; it must never perform a blocking connection in a service query. Real Frigate/go2rtc connection provisioning and SEI preservation require separately authorized local acceptance. Do not pass a decoded/transcoded preview, arbitrary browser URL or shared FD. If using a future subprocess connector, that connector must own/drain diagnostics and bound setup/shutdown independently.
+
+## Durable Historical work and evidence
+
+`JobStore(root, service_factory, max_jobs=100, max_queued=8)` owns private persistent `jobs.sqlite`, evidence and scratch directories. Roots must be owned by the process and mode0700, without symlink ancestors. The job DB is mode0600; evidence/temp files inherit inaccessible private ancestors. One process holds an exclusive store lock. Accepted requests are committed before their opaque job IDs return, then queued. A single worker runs `run_next()` explicitly or via `start()`. Reads never execute a verifier. Queue and total jobs are bounded; the store rejects capacity exhaustion rather than silently pruning records. No idempotency token is implemented: each explicit submission intentionally creates a new job.
+
+States are `accepted → queued → running → completed` or `failed`; reopening marks all unfinished accepted/queued/running jobs `interrupted`, with no automatic replay. All four media verdicts VALID/PARTIAL/INVALID/UNKNOWN are legitimate completed results. Infrastructure/persistence failures are separate generic failed stages, without raw exception text. Completed result contains existing typed request/context and independent verification, metadata coverage and requested coverage. Completion request ID belongs to the underlying verification and is associated with the opaque job ID.
+
+The worker gives the existing backend an owned temporary evidence destination, recognizes the resulting bundle, verifies request association, atomically renames the whole bundle into persistent storage and commits the final job/evidence reference. No completed record is exposed without usable persisted evidence. A publication-success/DB-failure can leave an orphaned evidence bundle; it is preserved and not exposed as completed. Scratch cleanup is limited to request-created temporary resources. Full power-loss/fsync qualification, orphan reclamation and evidence expiry are deferred; finite total job capacity bounds retained growth. Storage exhaustion fails work rather than inventing durability. Deploy sufficient evidence/scratch quota for configured limits and existing finite executor temporaries.
+
+Completed job/result/evidence persists across companion or Frigate restart. Evidence lookup uses opaque identities tied to completed jobs. `evidence_summary` uses existing structural/hash recognition, not verification. `download` returns a bounded ZIP containing only the portable receipt/artifacts; it exposes no host path. Recognition is not issuer authentication. Shutdown first stops new worker polling; if an execution has not finished within the bounded join, close reports an error and leaves ownership intact for an explicit later close. It never closes the DB beneath a running job or silently resumes work after restart.
+
+## Local service boundary
+
+`CompanionService(live_scheduler, job_store, cameras)` is a **programmatic local boundary**, selected to avoid premature HTTP/auth infrastructure. One configured deployment principal has an explicit logical-camera allowlist. Its operations are:
+
+| Method | Returned data |
+|---|---|
+| `list_mappings()` | Authorized Frigate camera/selected stream/context, logical camera/rendition and revision; no endpoint |
+| `live_status(camera, stream, context)` | Existing Live status/reason, evidence age, observation/last-evidence timestamps, session and mapping identity |
+| `submit(camera, start, end)` | Opaque job ID after durable acceptance |
+| `job(job_id)` | State/stage, original request, final structured result and opaque evidence ID |
+| `evidence_summary(evidence_id)` | Recognition, receipt hash and recorded result |
+| `download(evidence_id)` | Portable ZIP bytes |
+| `health()` | Companion process lifecycle only |
+| `readiness()` | Local service/store/scheduler lifecycle/configuration, independent of signing status |
+
+Result dataclasses serialize as dictionaries; identity fields inside Historical results retain their `{value: ...}` structure. Live uses its existing `to_dict` with decimal age strings. Readiness does not attest Frigate connectivity, media readiness or cryptographic validity. The caller must start/drive the Live scheduler and job worker explicitly. Queries use locks and bounded reads; long Historical execution runs outside the query lock.
+
+No endpoint or filesystem path is accepted from the UI-facing boundary; paths in deployment profiles are operator configuration. A future thin HTTP/proxy adapter must authenticate users, apply appropriate camera allowlists, cap request bodies and protect cookie mutations with CSRF controls. Frigate cookies do not automatically authenticate this service. Opaque IDs are not bearer authorization. Keep the service private; never expose unauthenticated Frigate port5000. Use scoped authenticated configuration access and separately provision secrets outside API/logs/evidence. No signing private keys belong here.
+
+## Validation limits
+
+Deterministic tests use synthetic SQLite databases (including real committed WAL), local media files and pipes. They cover read-only access, incomplete snapshots, staging races/containment, exact rendition mapping/reset, durable restart behavior and portable evidence without re-execution. They do not establish live Frigate deployment, hardware compatibility, signing validity of synthetic data, release readiness or broad version compatibility. Longer local integration, C210/Gateway acceptance and complete product E2E remain separately authorized future activities. Desktop UX is deferred to later slices; mobile support is outside M1.

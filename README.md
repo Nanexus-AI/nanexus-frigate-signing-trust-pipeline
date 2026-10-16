@@ -1,6 +1,6 @@
 # Nanexus trust contracts
 
-Offline Python contracts, bounded Historical verification and Live Signing Status for a Frigate-first trust companion. A configurable Toolkit adapter verifies finite H.264 candidates from a caller-owned frozen metadata snapshot. Live observes supported compressed bytes through a configuration-driven source interface. No real transport, current Frigate discovery, running daemon or installation package is provided.
+Python contracts, bounded Historical verification, Live Signing Status and a companion integration foundation for Frigate v0.18.0. A read-only SQLite adapter stages retained media for the existing finite Toolkit backend. Explicit playback/rendition mapping, nonblocking observation sources, durable jobs and a local programmatic service boundary prepare later Frigate-native desktop integration. No browser UI, network listener, Frigate patch or installation package is provided.
 
 Python 3.11+; standard library only. Run the targeted tests from the repository root:
 
@@ -12,4 +12,4 @@ The domain contracts keep Historical verification, metadata coverage and request
 
 Evidence bundles contain a versioned `receipt.json` and bundle-relative artifacts. Newly issued supported bundles can be relocated and recognized without media processing, external tools, database or network access. Recognition establishes supported structure and hash consistency of a **recorded result**, not a new cryptographic verdict or issuer authenticity.
 
-See [Live Signing Status](docs/live.md), the [Historical API](docs/historical.md), and the [evidence contract](docs/evidence-format.md). Live observation is separate from Historical cryptographic verification and coverage. All Historical verdicts, including legitimate `PARTIAL` and `UNKNOWN`, are preserved. Frigate version support, production deployment, licensing for distribution and release qualification remain future decisions; no released integration is claimed.
+See the [integration foundation](docs/integration.md), [Live Signing Status](docs/live.md), the [Historical API](docs/historical.md), and the [evidence contract](docs/evidence-format.md). Live observation is separate from Historical cryptographic verification and coverage. All Historical verdicts, including legitimate `PARTIAL` and `UNKNOWN`, are preserved. Only the documented Frigate v0.18.0 profile is targeted. Real deployment acceptance, licensing for distribution and release qualification remain future work; no released integration is claimed.
