@@ -1,0 +1,4 @@
+{
+  "complete": {"intervals": [["0", "12"], ["11", "22"], ["23", "31"]], "request": ["2", "5"], "verdicts": ["PARTIAL", "PARTIAL", "VALID"], "pending_frames": [15, 15, 0], "pending_nals": [45, 45, 0]},
+  "incomplete": {"intervals": [["0", "11.933333"], ["10", "20"]], "request": ["2", "5"], "verdicts": ["PARTIAL", "PARTIAL"], "pending_frames": [15, 15], "pending_nals": [30, 30]}
+}
