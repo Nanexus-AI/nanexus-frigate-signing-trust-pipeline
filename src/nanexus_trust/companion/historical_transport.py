@@ -1,6 +1,10 @@
 """Fixed Historical job/evidence adapter; no media paths or user credentials."""
 import hmac
 import json
+from decimal import Decimal
+from http.server import BaseHTTPRequestHandler
+import socket
+import time
 import re
 import threading
 from urllib.parse import parse_qs, urlsplit
@@ -11,6 +15,12 @@ from .transport import LiveTransport, LiveHTTPServer, _Handler
 
 MAX_JSON = 32768
 MAX_DOWNLOAD = 8 * 1024 * 1024
+
+HTTP_ADMISSION_SECONDS = 2
+# Matches the unchanged Coordinator verification deadline, plus bounded delivery.
+HV2_EXECUTION_SECONDS = 60
+HV2_DELIVERY_SECONDS = 5
+HV2_HTTP_SECONDS = HV2_EXECUTION_SECONDS + HV2_DELIVERY_SECONDS
 
 
 def job_document(job):
@@ -50,7 +60,7 @@ class HistoricalTransport(LiveTransport):
         super().__init__(service, token)
         self._download_slot = threading.Lock()
 
-    def historical(self, method, target, authorization, body=b''):
+    def historical(self, method, target, authorization, body=b'', *, _admit_verify=None):
         if type(authorization) is not str or not hmac.compare_digest(authorization.encode(), ('Bearer '+self._token).encode()):
             return 401, {'error': 'unauthorized'}
         try:
@@ -63,6 +73,37 @@ class HistoricalTransport(LiveTransport):
             if set(query) != {'camera'} or len(query['camera']) != 1:
                 raise ValueError()
             camera = identifier(query['camera'][0])
+            if url.path in ('/v1/historical/v2/verify', '/v1/historical/v2/cancel'):
+                from ..historical_v2.prototype import PrototypeFailure, MAX_RESPONSE
+                if method != 'POST': return 405, {'error': 'unsupported_request'}
+                def pairs(items):
+                    d = {}
+                    for k,v in items:
+                        if k in d: raise ValueError()
+                        d[k] = v
+                    return d
+                data = json.loads(body, object_pairs_hook=pairs)
+                required = {'binding_guard','request_id'} | ({'start','end'} if url.path.endswith('/verify') else set())
+                if type(data) is not dict or set(data) != required: raise ValueError()
+                for key in ('binding_guard','request_id'):
+                    length = 64 if key == 'binding_guard' else 32
+                    if type(data[key]) is not str or not re.fullmatch('[0-9a-f]{'+str(length)+'}',data[key]): raise ValueError()
+                try:
+                    if url.path.endswith('/verify'):
+                        Interval(data['start'],data['end'])
+                        if _admit_verify is not None:
+                            if Decimal(data['end']) - Decimal(data['start']) > 900:
+                                raise PrototypeFailure('LIMIT')
+                            self.service._hv2_camera(camera, data['binding_guard'])
+                            if not _admit_verify():
+                                raise PrototypeFailure('UNAVAILABLE')
+                        result = self.service.hv2_verify(camera,data['binding_guard'],data['start'],data['end'],data['request_id'])
+                    else: result = self.service.hv2_cancel(camera,data['binding_guard'],data['request_id'])
+                except PrototypeFailure as exc:
+                    return {'UNAUTHORIZED':403,'BUSY':409,'DISABLED':404,'UNAVAILABLE':404,'LIMIT':413}.get(exc.code,400), {'schema':'nanexus-hv2-prototype/1','status':exc.code}
+                if len(json.dumps(result,separators=(',',':'),allow_nan=False).encode()) > MAX_RESPONSE:
+                    return 413, {'schema':'nanexus-hv2-prototype/1','status':'LIMIT'}
+                return 200, result
             self.service._camera(camera)
             if url.path == '/v1/historical/jobs' and method == 'POST':
                 def pairs(items):
@@ -120,6 +161,44 @@ class HistoricalHTTPServer(LiveHTTPServer):
 
 
 class _HistoricalHandler(_Handler):
+    def handle(self):
+        # Keep the ordinary two-second guard until transport admission succeeds.
+        self._lifetime_lock = threading.Lock()
+        self._lifetime_generation = 0
+        self._lifetime_expired = False
+        self._admission_deadline = time.monotonic() + HTTP_ADMISSION_SECONDS
+        self._lifetime_timer = threading.Timer(HTTP_ADMISSION_SECONDS, self._expire, args=(0,))
+        self._lifetime_timer.daemon = True
+        self._lifetime_timer.start()
+        try:
+            BaseHTTPRequestHandler.handle(self)
+        finally:
+            with self._lifetime_lock:
+                self._lifetime_generation += 1
+                self._lifetime_timer.cancel()
+
+    def _expire(self, generation):
+        with self._lifetime_lock:
+            if generation != self._lifetime_generation:
+                return
+            self._lifetime_expired = True
+            try:
+                self.connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+
+    def _admit_verify(self):
+        with self._lifetime_lock:
+            if self._lifetime_expired or time.monotonic() >= self._admission_deadline:
+                return False
+            self._lifetime_generation += 1
+            self._lifetime_timer.cancel()
+            self._lifetime_timer = threading.Timer(
+                HV2_HTTP_SECONDS, self._expire, args=(self._lifetime_generation,))
+            self._lifetime_timer.daemon = True
+            self._lifetime_timer.start()
+            return True
+
     def do_GET(self):
         if not self.path.startswith('/v1/historical/'):
             return super().do_GET()
@@ -137,9 +216,12 @@ class _HistoricalHandler(_Handler):
             if len(body) != length: raise ValueError()
         except (ValueError, OSError):
             return self._reply(400, {'error': 'invalid_request'})
-        code, document = self.server.transport.historical(self.command, self.path, auth[0] if len(auth)==1 else None, body)
+        code, document = self.server.transport.historical(self.command, self.path, auth[0] if len(auth)==1 else None, body,
+                                                           _admit_verify=self._admit_verify)
         data = document if isinstance(document, bytes) else json.dumps(document, separators=(',', ':'), allow_nan=False).encode()
-        if len(data) > (MAX_DOWNLOAD if isinstance(document, bytes) else MAX_JSON):
+        prototype_route = self.path.split('?',1)[0] in ('/v1/historical/v2/verify','/v1/historical/v2/cancel')
+        cap = (4 * 1024 * 1024) if prototype_route else (MAX_DOWNLOAD if isinstance(document, bytes) else MAX_JSON)
+        if len(data) > cap:
             code, data = 503, b'{"error":"response_limit"}'
         self.send_response(code)
         self.send_header('Content-Type', 'application/zip' if isinstance(document, bytes) else 'application/json')

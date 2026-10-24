@@ -1,0 +1,15 @@
+{
+  "profile": "frigate-0.18.0-77a66e7-h264-mp4-offline-v1",
+  "pin": "77a66e75c61862b048a07c1295877f4b31343504",
+  "columns": {
+    "id": "VARCHAR(30)", "camera": "VARCHAR(20)", "path": "VARCHAR(255)",
+    "start_time": "DATETIME", "end_time": "DATETIME", "duration": "REAL",
+    "motion": "INTEGER", "objects": "INTEGER", "dBFS": "INTEGER",
+    "segment_size": "REAL", "regions": "INTEGER", "motion_heatmap": "TEXT"
+  },
+  "rows": [
+    ["a", "cam", "/media/frigate/recordings/owned/a.mp4", 10, 12, 2],
+    ["b", "cam", "/media/frigate/recordings/owned/b.mp4", 14, 16, 2]
+  ],
+  "uncertainty": "Metadata intervals only; no qualified presentation anchor"
+}

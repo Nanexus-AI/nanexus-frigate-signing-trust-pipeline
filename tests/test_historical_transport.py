@@ -70,3 +70,17 @@ class TransportTests(unittest.TestCase):
         finally:
             release.set(); thread.join(timeout=2)
         self.assertEqual(result[0][0], 200)
+
+class PrototypeRouteTests(unittest.TestCase):
+    def test_new_route_auth_closed_body_and_legacy_cap_unchanged(self):
+        from nanexus_trust.companion.historical_transport import MAX_JSON
+        service=Service();calls=[]
+        service.hv2_verify=lambda *args:(calls.append(args) or {'schema':'nanexus-hv2-prototype/1','status':'RESULT','test_payload':'x'*40000})
+        transport=HistoricalTransport(service,TOKEN);url='/v1/historical/v2/verify?camera=front'
+        body=json.dumps(dict(start='11',end='12',binding_guard='a'*64,request_id='b'*32)).encode()
+        self.assertEqual(transport.historical('POST',url,'bad',body)[0],401);self.assertEqual(calls,[])
+        self.assertEqual(transport.historical('POST',url,'Bearer '+TOKEN,body)[0],200)
+        self.assertEqual(MAX_JSON,32768)
+        self.assertEqual(transport.historical('POST',url,'Bearer '+TOKEN,body[:-1]+b',"path":"/private"}')[0],400)
+        service.hv2_verify=lambda *args: {'payload':'x'*(4<<20)}
+        self.assertEqual(transport.historical('POST',url,'Bearer '+TOKEN,body)[0],413)

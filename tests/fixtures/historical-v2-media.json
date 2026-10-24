@@ -1,0 +1,15 @@
+{
+  "archived_snapshot_sha256": "41edd5288bd8d36a18f2068bc62299ccaa3e96574871a22d076255607d127679",
+  "sample": {
+    "relative_path": "2026-10-15/23/c210_signed/00.04.mp4",
+    "sha256": "9e88f34ce514b7def973812b25e9ea21c2bb2ae2479dfc868879c6d0ce5997e7",
+    "bytes": 103152, "packets": 180, "nals": 385,
+    "B_fresh": 11, "B_finalized": 355, "B_provisional_tail": 30
+  },
+  "timing_controls": [
+    {"pts": null, "dts": 0, "local_pts": null},
+    {"pts": 18000, "dts": 18000, "local_pts": "1/5"}
+  ],
+  "placement": "UNPLACED",
+  "qualification": "single-file source association; no trust anchor or origin claim"
+}

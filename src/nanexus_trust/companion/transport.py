@@ -1,4 +1,4 @@
-"""Private GET-only Live adapter. No user identity, mapping inventory or History API."""
+"""Private GET-only Live adapter. No browser identity or History API."""
 
 from decimal import Decimal, InvalidOperation
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -109,6 +109,23 @@ class LiveTransport:
                 return (200 if ready else 503), {'ready': ready}
             except Exception:
                 return 503, {'ready': False}
+        if parsed.path == '/v1/cameras/bindings' and not parsed.query:
+            try:
+                return 200, self.service.camera_bindings()
+            except Exception:
+                return 503, {'error': 'service_unavailable'}
+        if parsed.path == '/v1/cameras/status':
+            try:
+                values = parse_qs(parsed.query, strict_parsing=True, keep_blank_values=True, max_num_fields=2)
+                if set(values) != {'camera', 'guard'} or any(len(v) != 1 for v in values.values()):
+                    raise ValueError()
+                camera, guard = (identifier(values[k][0]) for k in ('camera', 'guard'))
+            except ValueError:
+                return 400, {'error': 'invalid_request'}
+            try:
+                return 200, self.service.camera_status(camera, guard)
+            except Exception:
+                return 503, {'error': 'service_unavailable'}
         if parsed.path != '/v1/live/status':
             return 404, {'error': 'not_found'}
         try:
@@ -180,7 +197,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _reply(self, code, document):
         data = json.dumps(document, separators=(',', ':'), allow_nan=False).encode()
-        if len(data) > MAX_RESPONSE:
+        limit = 32768 if getattr(self, 'path', '') == '/v1/cameras/bindings' else MAX_RESPONSE
+        if len(data) > limit:
             code, data = 200, json.dumps(unknown()).encode()
         self.send_response(code)
         self.send_header('Content-Type', 'application/json')

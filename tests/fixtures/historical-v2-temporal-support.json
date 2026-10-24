@@ -1,0 +1,276 @@
+{
+  "purpose": "Synthetic exhaustive interval model only; not real origin, signing or continuity qualification",
+  "A_v1_fixture_sha256": "a5ade5ccd7e29ef5dee1f5148fdf783a56afe575e9bd46198425f8c9217564c6",
+  "base_page": {
+    "record": {
+      "actual_context_refs": [
+        "origin-proof",
+        "context-1"
+      ],
+      "coverage": [],
+      "engine_profile": "synthetic-only-engine",
+      "evidence": [
+        {
+          "evidence_id": "bounds-1",
+          "profile": "nanexus-historical-v2-temporal-support-bounds-v1",
+          "sha256": "d97d6ed6cfd838bff71d43c6c06afb335cde908af3fe1c8a755397973f8d4328",
+          "size": 898
+        },
+        {
+          "evidence_id": "proof-1",
+          "profile": "synthetic-temporal-extent-proof-v1",
+          "sha256": "5e9e0ad38e68ad71463db9dd8d7f8a8c92d4a6be19ac69001c116c5cdd6fbfb1",
+          "size": 532
+        }
+      ],
+      "job_id": "job-1",
+      "lifecycle": "INCOMPLETE",
+      "next_cursor": null,
+      "observations": [
+        {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "origin-proof",
+            "context-1"
+          ],
+          "evidence_refs": [
+            "bounds-1",
+            "proof-1"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-1",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-temporal-extent-v1",
+            "pts": null,
+            "status": "AMBIGUOUS",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 2,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1",
+              "received-2"
+            ],
+            "retired_prefix_ordinal": 1,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": null,
+            "kind": "sample",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": "synthetic-scope",
+            "source_refs": [
+              "received-1",
+              "received-2"
+            ]
+          },
+          "trust_profile": "synthetic-trust-v1"
+        }
+      ],
+      "output_complete": true,
+      "processed_refs": [
+        "received-1",
+        "received-2"
+      ],
+      "progress": {
+        "basis": "counts-only",
+        "context_scanned": 0,
+        "denominator": null,
+        "finalized": 2,
+        "phase": "INCOMPLETE",
+        "plan_revision": "plan-1",
+        "scanned": 2
+      },
+      "reason": null,
+      "request": {
+        "camera": {
+          "binding_generation": "binding-1",
+          "display_name": "Synthetic camera",
+          "native_key": "camera-1",
+          "provider_instance": "synthetic-provider"
+        },
+        "coordinate": "host-metadata-unix-seconds",
+        "interval": {
+          "end": "3600",
+          "start": "0"
+        },
+        "operation": "historical-v2",
+        "request_id": "synthetic-request"
+      },
+      "unprocessed_refs": [],
+      "unresolved_refs": [
+        "obs-1"
+      ]
+    },
+    "schema": "nanexus-historical-v2-contracts",
+    "type": "ResultPage",
+    "version": 1
+  },
+  "bounds": {
+    "schema": "nanexus-historical-v2-temporal-support-bounds",
+    "version": 1,
+    "type": "TemporalSupportBounds",
+    "record": {
+      "attachment_id": "bounds-1",
+      "parent": {
+        "job_id": "job-1",
+        "request_sha256": "3fae4ca365cba86f8c2f3421b2e682dac95dff61373cceabaeb14eb6ef10a2a9",
+        "run_id": "run-1",
+        "observation_id": "obs-1",
+        "observation_sha256": "20004014c5f6a5dbe55c15222838540930f49e0c67b2af9d2054af9952182a03"
+      },
+      "coordinate": "host-metadata-unix-seconds",
+      "policy": "synthetic-temporal-extent-v1",
+      "start_min": {
+        "numerator": 0,
+        "denominator": 1
+      },
+      "start_max": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "end_min": {
+        "numerator": 9,
+        "denominator": 1
+      },
+      "end_max": {
+        "numerator": 10,
+        "denominator": 1
+      },
+      "source_refs": [
+        "received-1",
+        "received-2"
+      ],
+      "dependency_refs": [
+        "origin-proof",
+        "context-1"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "proof-1",
+          "profile": "synthetic-temporal-extent-proof-v1",
+          "sha256": "5e9e0ad38e68ad71463db9dd8d7f8a8c92d4a6be19ac69001c116c5cdd6fbfb1",
+          "size": 532
+        }
+      ]
+    }
+  },
+  "proof": {
+    "model": "synthetic-exhaustive-continuous-intervals-v1",
+    "observation_sha256": "20004014c5f6a5dbe55c15222838540930f49e0c67b2af9d2054af9952182a03",
+    "coordinate": "host-metadata-unix-seconds",
+    "policy": "synthetic-temporal-extent-v1",
+    "source_refs": [
+      "received-1",
+      "received-2"
+    ],
+    "dependency_refs": [
+      "origin-proof",
+      "context-1"
+    ],
+    "cases": [
+      {
+        "start": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "end": {
+          "numerator": 9,
+          "denominator": 1
+        },
+        "alternative_ref": null
+      },
+      {
+        "start": {
+          "numerator": 1,
+          "denominator": 1
+        },
+        "end": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "alternative_ref": null
+      }
+    ]
+  },
+  "publication": {
+    "schema": "nanexus-historical-v2-temporal-publication",
+    "version": 1,
+    "type": "TemporalPublication",
+    "record": {
+      "publication_id": "synthetic-publication",
+      "generation": 0,
+      "job_id": "job-1",
+      "request_sha256": "3fae4ca365cba86f8c2f3421b2e682dac95dff61373cceabaeb14eb6ef10a2a9",
+      "base_page": {
+        "evidence_id": "base-page",
+        "profile": "nanexus-historical-v2-result-page-v1",
+        "sha256": "023e12f4cf4ec5ec3238959c4eee6336bc9164a73ba4d81332befd7be14112f3",
+        "size": 1972
+      },
+      "attachments": [
+        {
+          "evidence_id": "bounds-1",
+          "profile": "nanexus-historical-v2-temporal-support-bounds-v1",
+          "sha256": "d97d6ed6cfd838bff71d43c6c06afb335cde908af3fe1c8a755397973f8d4328",
+          "size": 898
+        }
+      ]
+    }
+  },
+  "expected": {
+    "definite_core": [
+      [
+        1,
+        1
+      ],
+      [
+        9,
+        1
+      ]
+    ],
+    "possible_envelope": [
+      [
+        0,
+        1
+      ],
+      [
+        10,
+        1
+      ]
+    ],
+    "uncertainty_bands": [
+      [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          9,
+          1
+        ],
+        [
+          10,
+          1
+        ]
+      ]
+    ]
+  }
+}

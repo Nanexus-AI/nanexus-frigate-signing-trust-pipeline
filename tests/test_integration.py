@@ -495,3 +495,23 @@ class BoundaryTests(Fixture):
 
 
 if __name__ == '__main__': unittest.main()
+
+class PrototypeWiringTests(unittest.TestCase):
+    def test_optional_coordinator_defaults_and_shutdown(self):
+        from types import SimpleNamespace
+        from nanexus_trust.historical_v2.prototype import PrototypeFailure
+        live=SimpleNamespace(close=lambda:None);jobs=SimpleNamespace(close=lambda:None)
+        service=CompanionService(live,jobs,('front',))
+        with self.assertRaises(PrototypeFailure):service.hv2_verify('front','a'*64,'1','2','a'*32)
+        calls=[];service.historical_v2=SimpleNamespace(close=lambda:calls.append('closed'))
+        service.close();self.assertEqual(calls,['closed'])
+    def test_explicit_captured_configuration_rejects_unqualified_profile(self):
+        from nanexus_trust.launcher import validate_hv2_config
+        with self.assertRaises(ValueError):validate_hv2_config({'profile':'0.18.2'})
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root);db=root/'captured';db.write_bytes(b'not opened');ca=root/'public';ca.write_bytes(b'not read');worker=root/'worker';worker.write_bytes(b'not executed')
+            from nanexus_trust.frigate.historical_v2 import PROFILE_0182
+            config=dict(profile=PROFILE_0182,snapshot=str(db),snapshot_sha256='a'*64,cut='captured-cut',media_root=str(root),worker=str(worker),public_ca=str(ca),ffprobe='/usr/bin/ffprobe')
+            validate_hv2_config(config)
+            config['profile']='unknown'
+            with self.assertRaises(ValueError):validate_hv2_config(config)

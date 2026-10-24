@@ -1,0 +1,1343 @@
+{
+  "note": "Synthetic contract examples only; no runtime qualification.",
+  "valid": [
+    {
+      "name": "valid-negative-valid-0",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-0",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "valid-negative-valid-1",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-1",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "INTEGRITY_NEGATIVE",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "valid-negative-valid-2",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-2",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "inspected-no-recognized-evidence",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-1",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "NO_RECOGNIZED_SIGNING_EVIDENCE",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "synthetic-missing-order-only",
+      "document": {
+        "record": {
+          "context_quality": "INCOMPLETE",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-1",
+          "placement": {
+            "anchor": null,
+            "coordinate": null,
+            "origin": null,
+            "policy": null,
+            "pts": null,
+            "status": "UNPLACED",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "INDETERMINATE",
+          "support": {
+            "alternatives": [],
+            "interval": null,
+            "kind": "order",
+            "left_ref": "received-1",
+            "missing_count": 2,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "unplaced-provisional",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "PROVISIONAL",
+          "observation_id": "obs-1",
+          "placement": {
+            "anchor": null,
+            "coordinate": null,
+            "origin": null,
+            "policy": null,
+            "pts": null,
+            "status": "UNPLACED",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": null,
+          "run_id": "run-1",
+          "state": "INDETERMINATE",
+          "support": {
+            "alternatives": [],
+            "interval": null,
+            "kind": "unplaced",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": null
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "sample-without-invented-duration",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-1",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": null,
+            "kind": "sample",
+            "left_ref": null,
+            "missing_count": null,
+            "point": {
+              "denominator": 2,
+              "numerator": 21
+            },
+            "right_ref": null,
+            "sample_ref": "sample",
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "ambiguous-overlap-not-composable",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-1",
+          "placement": {
+            "anchor": null,
+            "coordinate": null,
+            "origin": null,
+            "policy": "overlap-stop",
+            "pts": null,
+            "status": "AMBIGUOUS",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "INDETERMINATE",
+          "support": {
+            "alternatives": [
+              "item-a",
+              "item-b"
+            ],
+            "interval": null,
+            "kind": "ambiguous",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1",
+              "source-2"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "independent-island",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "island-2",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-2",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "qualified-gap",
+      "document": {
+        "record": {
+          "complete_discovery": true,
+          "inventory_id": "inventory",
+          "scope": {
+            "end": "12",
+            "start": "11"
+          },
+          "stable_source_refs": [],
+          "state": "NO_RETAINED_VIDEO"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Coverage",
+        "version": 1
+      }
+    },
+    {
+      "name": "unknown-inventory",
+      "document": {
+        "record": {
+          "complete_discovery": false,
+          "inventory_id": "inventory",
+          "scope": {
+            "end": "13",
+            "start": "12"
+          },
+          "stable_source_refs": [],
+          "state": "UNKNOWN"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Coverage",
+        "version": 1
+      }
+    },
+    {
+      "name": "stopped-partial",
+      "document": {
+        "record": {
+          "actual_context_refs": [
+            "context"
+          ],
+          "coverage": [],
+          "engine_profile": "synthetic-profile",
+          "evidence": [],
+          "job_id": "job",
+          "lifecycle": "STOPPED",
+          "next_cursor": null,
+          "observations": [
+            {
+              "context_quality": "SATISFIED",
+              "context_refs": [
+                "context"
+              ],
+              "evidence_refs": [
+                "evidence"
+              ],
+              "finality": "FINALIZED",
+              "observation_id": "obs-1",
+              "placement": {
+                "anchor": null,
+                "coordinate": "host-metadata-unix-seconds",
+                "origin": null,
+                "policy": "synthetic-policy",
+                "pts": null,
+                "status": "QUALIFIED_METADATA_TIME",
+                "time_base": null
+              },
+              "reasons": [],
+              "report": {
+                "generating_feed_ordinal": 8,
+                "generation": "report-1",
+                "received_refs": [
+                  "received-1"
+                ],
+                "retired_prefix_ordinal": null,
+                "revision": 0
+              },
+              "run_id": "run-1",
+              "state": "VERIFIED_SIGNING",
+              "support": {
+                "alternatives": [],
+                "interval": {
+                  "end": "11",
+                  "start": "10"
+                },
+                "kind": "interval",
+                "left_ref": null,
+                "missing_count": null,
+                "point": null,
+                "right_ref": null,
+                "sample_ref": null,
+                "source_refs": [
+                  "source-1"
+                ]
+              },
+              "trust_profile": "trust-profile"
+            }
+          ],
+          "output_complete": false,
+          "processed_refs": [
+            "source-1"
+          ],
+          "progress": {
+            "basis": "stable-plan-file-size-weighted",
+            "context_scanned": 0,
+            "denominator": 100,
+            "finalized": 50,
+            "phase": "STOPPED",
+            "plan_revision": "plan-1",
+            "scanned": 100
+          },
+          "reason": "RESOURCE_POLICY",
+          "request": {
+            "camera": {
+              "binding_generation": "binding-1",
+              "display_name": "Example",
+              "native_key": "camera",
+              "provider_instance": "mock"
+            },
+            "coordinate": "host-metadata-unix-seconds",
+            "interval": {
+              "end": "20",
+              "start": "10"
+            },
+            "operation": "historical-v2",
+            "request_id": "request"
+          },
+          "unprocessed_refs": [
+            "source-2"
+          ],
+          "unresolved_refs": [
+            "pending"
+          ]
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "ResultPage",
+        "version": 1
+      }
+    },
+    {
+      "name": "complete-with-negative",
+      "document": {
+        "record": {
+          "actual_context_refs": [
+            "context"
+          ],
+          "coverage": [],
+          "engine_profile": "synthetic-profile",
+          "evidence": [],
+          "job_id": "job",
+          "lifecycle": "COMPLETE",
+          "next_cursor": null,
+          "observations": [
+            {
+              "context_quality": "SATISFIED",
+              "context_refs": [
+                "context"
+              ],
+              "evidence_refs": [
+                "evidence"
+              ],
+              "finality": "FINALIZED",
+              "observation_id": "obs-1",
+              "placement": {
+                "anchor": null,
+                "coordinate": "host-metadata-unix-seconds",
+                "origin": null,
+                "policy": "synthetic-policy",
+                "pts": null,
+                "status": "QUALIFIED_METADATA_TIME",
+                "time_base": null
+              },
+              "reasons": [],
+              "report": {
+                "generating_feed_ordinal": 8,
+                "generation": "report-1",
+                "received_refs": [
+                  "received-1"
+                ],
+                "retired_prefix_ordinal": null,
+                "revision": 0
+              },
+              "run_id": "run-1",
+              "state": "INTEGRITY_NEGATIVE",
+              "support": {
+                "alternatives": [],
+                "interval": {
+                  "end": "11",
+                  "start": "10"
+                },
+                "kind": "interval",
+                "left_ref": null,
+                "missing_count": null,
+                "point": null,
+                "right_ref": null,
+                "sample_ref": null,
+                "source_refs": [
+                  "source-1"
+                ]
+              },
+              "trust_profile": "trust-profile"
+            }
+          ],
+          "output_complete": true,
+          "processed_refs": [
+            "source-1"
+          ],
+          "progress": {
+            "basis": "stable-plan-file-size-weighted",
+            "context_scanned": 0,
+            "denominator": 100,
+            "finalized": 100,
+            "phase": "COMPLETE",
+            "plan_revision": "plan-1",
+            "scanned": 100
+          },
+          "reason": null,
+          "request": {
+            "camera": {
+              "binding_generation": "binding-1",
+              "display_name": "Example",
+              "native_key": "camera",
+              "provider_instance": "mock"
+            },
+            "coordinate": "host-metadata-unix-seconds",
+            "interval": {
+              "end": "20",
+              "start": "10"
+            },
+            "operation": "historical-v2",
+            "request_id": "request"
+          },
+          "unprocessed_refs": [],
+          "unresolved_refs": []
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "ResultPage",
+        "version": 1
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "unknown-field",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-0",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile",
+          "extra": true
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "no-video-is-not-signing",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-0",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "NO_RETAINED_VIDEO",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "incomplete-discovery-cannot-prove-gap",
+      "document": {
+        "record": {
+          "complete_discovery": false,
+          "inventory_id": "inventory",
+          "scope": {
+            "end": "12",
+            "start": "11"
+          },
+          "stable_source_refs": [],
+          "state": "NO_RETAINED_VIDEO"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Coverage",
+        "version": 1
+      }
+    },
+    {
+      "name": "positive-provisional",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "PROVISIONAL",
+          "observation_id": "obs-0",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "positive-missing-trust",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-0",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": null
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "oversized-collection",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x",
+            "x"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-0",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "legacy-family",
+      "document": {
+        "record": {
+          "context_quality": "SATISFIED",
+          "context_refs": [
+            "context"
+          ],
+          "evidence_refs": [
+            "evidence"
+          ],
+          "finality": "FINALIZED",
+          "observation_id": "obs-0",
+          "placement": {
+            "anchor": null,
+            "coordinate": "host-metadata-unix-seconds",
+            "origin": null,
+            "policy": "synthetic-policy",
+            "pts": null,
+            "status": "QUALIFIED_METADATA_TIME",
+            "time_base": null
+          },
+          "reasons": [],
+          "report": {
+            "generating_feed_ordinal": 8,
+            "generation": "report-1",
+            "received_refs": [
+              "received-1"
+            ],
+            "retired_prefix_ordinal": null,
+            "revision": 0
+          },
+          "run_id": "run-1",
+          "state": "VERIFIED_SIGNING",
+          "support": {
+            "alternatives": [],
+            "interval": {
+              "end": "11",
+              "start": "10"
+            },
+            "kind": "interval",
+            "left_ref": null,
+            "missing_count": null,
+            "point": null,
+            "right_ref": null,
+            "sample_ref": null,
+            "source_refs": [
+              "source-1"
+            ]
+          },
+          "trust_profile": "trust-profile"
+        },
+        "schema": "nanexus-recorded-evidence",
+        "type": "Observation",
+        "version": 1
+      }
+    },
+    {
+      "name": "unsupported-operation",
+      "document": {
+        "record": {
+          "actual_context_refs": [
+            "context"
+          ],
+          "coverage": [],
+          "engine_profile": "synthetic-profile",
+          "evidence": [],
+          "job_id": "job",
+          "lifecycle": "STOPPED",
+          "next_cursor": null,
+          "observations": [
+            {
+              "context_quality": "SATISFIED",
+              "context_refs": [
+                "context"
+              ],
+              "evidence_refs": [
+                "evidence"
+              ],
+              "finality": "FINALIZED",
+              "observation_id": "obs-1",
+              "placement": {
+                "anchor": null,
+                "coordinate": "host-metadata-unix-seconds",
+                "origin": null,
+                "policy": "synthetic-policy",
+                "pts": null,
+                "status": "QUALIFIED_METADATA_TIME",
+                "time_base": null
+              },
+              "reasons": [],
+              "report": {
+                "generating_feed_ordinal": 8,
+                "generation": "report-1",
+                "received_refs": [
+                  "received-1"
+                ],
+                "retired_prefix_ordinal": null,
+                "revision": 0
+              },
+              "run_id": "run-1",
+              "state": "VERIFIED_SIGNING",
+              "support": {
+                "alternatives": [],
+                "interval": {
+                  "end": "11",
+                  "start": "10"
+                },
+                "kind": "interval",
+                "left_ref": null,
+                "missing_count": null,
+                "point": null,
+                "right_ref": null,
+                "sample_ref": null,
+                "source_refs": [
+                  "source-1"
+                ]
+              },
+              "trust_profile": "trust-profile"
+            }
+          ],
+          "output_complete": false,
+          "processed_refs": [
+            "source-1"
+          ],
+          "progress": {
+            "basis": "stable-plan-file-size-weighted",
+            "context_scanned": 0,
+            "denominator": 100,
+            "finalized": 50,
+            "phase": "STOPPED",
+            "plan_revision": "plan-1",
+            "scanned": 100
+          },
+          "reason": "RESOURCE_POLICY",
+          "request": {
+            "camera": {
+              "binding_generation": "binding-1",
+              "display_name": "Example",
+              "native_key": "camera",
+              "provider_instance": "mock"
+            },
+            "coordinate": "host-metadata-unix-seconds",
+            "interval": {
+              "end": "20",
+              "start": "10"
+            },
+            "operation": "legacy",
+            "request_id": "request"
+          },
+          "unprocessed_refs": [
+            "source-2"
+          ],
+          "unresolved_refs": [
+            "pending"
+          ]
+        },
+        "schema": "nanexus-historical-v2-contracts",
+        "type": "ResultPage",
+        "version": 1
+      }
+    }
+  ]
+}
