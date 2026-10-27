@@ -1,0 +1,89 @@
+/* Original Nanexus UI. System fonts and CSS geometry only; no upstream graphics. */
+#nanexus-dashboard-host {font:14px/1.4 system-ui,sans-serif;color:CanvasText;background:Canvas;color-scheme:light dark;--nx-border:color-mix(in srgb, CanvasText 28%, transparent);--nx-bg:Canvas;--nx-ink:CanvasText;}
+#nanexus-dashboard-host * {box-sizing:border-box;}
+#nanexus-dashboard-host [hidden] {display:none!important;}
+#nanexus-dashboard-host button {display:inline-flex;align-items:center;justify-content:center;gap:7px;background:color-mix(in srgb, CanvasText 12%, Canvas);color:CanvasText;border:1px solid var(--nx-border);border-radius:7px;padding:7px 12px;min-height:34px;cursor:pointer;font:inherit;line-height:1.2;}
+#nanexus-dashboard-host button:hover:not(:disabled) {background:color-mix(in srgb, CanvasText 20%, Canvas);}
+#nanexus-dashboard-host button:focus-visible {outline:3px solid #2563eb;outline-offset:3px;}
+#nanexus-dashboard-host button:disabled {opacity:.55;cursor:default;}
+#nanexus-dashboard-open {position:fixed;left:9px;top:408px;width:34px;height:34px;z-index:45;box-shadow:0 2px 6px #0003;padding:5px!important;}
+#nanexus-dashboard-open .nx-entry-mark {display:grid;place-items:center;width:22px;height:22px;border:1px solid currentColor;border-radius:5px;font-size:13px;font-weight:750;}
+#nanexus-dashboard-open .nx-entry-label {display:none;}
+#nanexus-dashboard-open[aria-expanded=true] {outline:2px solid #2563eb;}
+#nanexus-dashboard {position:fixed;left:52px;right:0;top:0;bottom:0;z-index:40;background:#f3f4f6;color:#1c2128;padding:18px 22px 28px;overflow:auto;color-scheme:light dark;}
+#nanexus-dashboard h1 {font-size:20px;font-weight:650;margin:0;}
+#nanexus-dashboard-header {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+#nanexus-dashboard-header button {margin:0;}
+#nanexus-dashboard button {margin:8px;}
+.nx-query,.nx-results {width:min(680px,100%);margin:0 0 14px;padding:16px 18px 18px;border:1px solid #e2e5e9;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+.nx-section-title {margin:0 0 12px;font-size:13px;font-weight:650;}
+.nx-workflow {display:flex;flex-direction:column;align-items:flex-start;gap:12px;width:100%;}
+.nx-workflow label {display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.nx-workflow select {font:inherit;color:CanvasText;background:Canvas;border:1px solid var(--nx-border);border-radius:6px;min-height:34px;padding:6px 8px;}
+.nx-workflow select.nx-end {appearance:base-select;}
+.nx-workflow select.nx-end::picker(select) {background:Canvas;color:CanvasText;border:1px solid var(--nx-border);border-radius:6px;padding:4px 0;max-height:16rem;}
+.nx-workflow select.nx-end option {color:CanvasText;background:Canvas;padding:4px 10px;}
+.nx-workflow select.nx-end option:disabled {color:color-mix(in srgb, CanvasText 38%, Canvas);}
+.nx-workflow select.nx-end.nx-invalid-choice {color:color-mix(in srgb, CanvasText 38%, Canvas);}
+#nanexus-dashboard .nx-workflow button {margin:0;}
+.nx-date {position:relative;}
+.nx-date-field {display:inline-flex;align-items:center;min-height:34px;border:1px solid var(--nx-border);border-radius:6px;background:Canvas;color:CanvasText;overflow:hidden;}
+.nx-date-field input {width:16ch;min-width:16ch;min-height:32px;border:0;margin:0;padding:6px 10px;background:transparent;color:inherit;font:inherit;font-variant-numeric:tabular-nums;outline:none;}
+#nanexus-dashboard .nx-date-field button {margin:0;width:34px;min-width:34px;min-height:32px;padding:0;border:0;border-right:1px solid var(--nx-border);border-radius:0;background:transparent;color:inherit;}
+#nanexus-dashboard .nx-date-field button:hover:not(:disabled) {background:color-mix(in srgb, CanvasText 12%, Canvas);}
+.nx-date-field input:disabled {opacity:.55;}
+.nx-popover {position:absolute;z-index:5;top:calc(100% + 4px);left:0;padding:8px;background:Canvas;color:CanvasText;border:1px solid var(--nx-border);border-radius:8px;}
+.nx-calendar {display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;width:320px;max-width:100%;}
+#nanexus-dashboard .nx-calendar button {margin:0;min-height:36px;padding:4px 8px;}
+.nx-month {text-align:center;font-weight:650;}
+.nx-weekdays,.nx-days {grid-column:1 / -1;display:grid;grid-template-columns:repeat(7,minmax(36px,1fr));gap:3px;}
+.nx-weekdays {font-size:12px;opacity:.75;text-align:center;}
+.nx-day {position:relative;width:100%;}
+.nx-day i {position:absolute;left:50%;bottom:3px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#2563eb;}
+.nx-day[aria-pressed=true] {outline:2px solid #2563eb;}
+.nx-times {display:flex;flex-wrap:nowrap;align-items:center;}
+.nx-times label + label {margin-left:28px;}
+.nx-actions {display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;}
+.nx-zone {margin-left:12px;font-size:13px;opacity:.85;}
+#nanexus-dashboard .nx-workflow .nx-primary {background:#1f6feb;border-color:#1b61d1;color:#fff;font-weight:650;}
+#nanexus-dashboard .nx-workflow .nx-primary:hover:not(:disabled) {background:#1a5fd0;}
+#nanexus-dashboard .nx-workflow .nx-secondary {background:transparent;color:#1c2128;font-weight:500;}
+.nx-limits {margin:14px 0 0;font-size:13px;}
+/* Ordinal recording strips; never a time-scaled timeline. */
+.nx-file-grid {display:flex;flex-wrap:wrap;gap:1px;margin:8px 0;max-width:100%;align-items:center;}
+.nx-file-block {display:block;flex:0 0 3px;width:3px;height:16px;padding:0;border:0;border-radius:1px;overflow:hidden;color:transparent;font-size:0;background:#c5ced8;}
+.nx-file-block:focus-visible {outline:2px solid #2563eb;outline-offset:1px;}
+.nx-file-block[data-finding=GREEN] {background:#2f9e62;}
+.nx-file-block[data-finding=AMBER] {background:#d9a322;}
+.nx-file-block[data-finding=RED] {background:#d45b5b;}
+.nx-gap-block {display:block;flex:0 0 7px;width:7px;height:16px;padding:0;border:0;border-radius:1px;background:#6d8294;font-size:0;color:transparent;}
+.nx-gap-block:focus-visible {outline:2px solid #2563eb;outline-offset:1px;}
+.nx-coverage {position:relative;display:flex;width:100%;height:18px;margin:8px 0 4px;overflow:hidden;}
+.nx-cov-interval {position:absolute;top:0;height:18px;z-index:1;}
+.nx-coverage span {display:block;height:18px;min-width:0;flex-shrink:1;}
+.nx-cov-outside {background:#8d8d8d;}
+.nx-cov-gap {background:#6d8294;}
+.nx-cov-undiscovered {background:#e7ebef;}
+.nx-cov-recording,.nx-cov-pending {background:#c5ced8;}
+.nx-cov-green {background:#2f9e62;}
+.nx-cov-amber {background:#d9a322;}
+.nx-cov-red {background:#d45b5b;}
+#historical-coverage-note {margin:0 0 8px;font-size:12px;}
+.nx-legend {display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px;}
+.nx-error {color:#b42318;}
+@media (prefers-color-scheme: dark) {
+  #nanexus-dashboard {background:#16181c;color:#e8eaed;}
+  .nx-query,.nx-results {background:#22262c;border-color:#343a42;box-shadow:none;}
+  #nanexus-dashboard .nx-workflow .nx-secondary {color:#e8eaed;}
+  .nx-error {color:#ffb4b4;}
+  .nx-file-block {background:#d5dde6;}
+  .nx-gap-block {background:#7f97ab;}
+  .nx-cov-outside {background:#767676;}
+  .nx-cov-gap {background:#7f97ab;}
+  .nx-cov-undiscovered {background:#2a3138;}
+  .nx-cov-recording,.nx-cov-pending {background:#d5dde6;}
+  .nx-cov-green {background:#2f9e62;}
+  .nx-cov-amber {background:#d9a322;}
+  .nx-cov-red {background:#d45b5b;}
+  .nx-day i {background:#93c5fd;}
+}

@@ -1,0 +1,123 @@
+/* Live destination and the sidebar flyout. Historical timeline rules stay elsewhere. */
+#nanexus-flyout {
+  position: fixed;
+  z-index: 60;
+  width: max-content;
+  min-width: 220px;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 6px;
+  border: 1px solid #e2e5e9;
+  border-radius: 10px;
+  background: #fff;
+  color: #1c2128;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.16);
+}
+#nanexus-dashboard-host #nanexus-flyout button {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  min-height: 36px;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  white-space: nowrap;
+  box-shadow: none;
+}
+#nanexus-dashboard-host #nanexus-flyout button:hover:not(:disabled),
+#nanexus-dashboard-host #nanexus-flyout button:focus-visible {
+  background: #f3f4f6;
+}
+.nx-flyout-icon {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+}
+.nx-icon-live {
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 6px 6px no-repeat,
+    linear-gradient(currentColor, currentColor) 8px 0 / 6px 6px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 8px / 6px 6px no-repeat,
+    linear-gradient(currentColor, currentColor) 8px 8px / 6px 6px no-repeat;
+}
+.nx-icon-history {
+  box-sizing: border-box;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  position: relative;
+}
+.nx-icon-history::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 1.5px;
+  height: 5px;
+  background: currentColor;
+}
+html.dark #nanexus-flyout {
+  background: #22262c;
+  color: #e8eaed;
+  border-color: #343a42;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+html.dark #nanexus-dashboard-host #nanexus-flyout button:hover:not(:disabled),
+html.dark #nanexus-dashboard-host #nanexus-flyout button:focus-visible {
+  background: #2c323a;
+}
+#nanexus-dashboard.nx-live {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#nanexus-dashboard.nx-live #nanexus-dashboard-header {
+  flex: 0 0 auto;
+  margin-bottom: 8px;
+}
+#nanexus-dashboard.nx-live > div:not(#nanexus-dashboard-header) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+#nanexus-live-monitor {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#nanexus-live-monitor > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+html.dark #nanexus-dashboard {
+  background: #16181c;
+  color: #e8eaed;
+}
+html.dark #nanexus-dashboard .nx-query,
+html.dark #nanexus-dashboard .nx-results {
+  background: #22262c;
+  border-color: #343a42;
+  box-shadow: none;
+}
+html.dark #nanexus-dashboard .nx-workflow .nx-secondary {
+  color: #e8eaed;
+}
+/* Host button styling must not paint over SigningMonitor snapshot targets. */
+#nanexus-live-monitor article button,
+#nanexus-live-monitor article button:hover:not(:disabled),
+#nanexus-live-monitor article button:focus-visible {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
