@@ -1,14 +1,15 @@
 """Explicit four-original experimental branch; never selected by existing launchers."""
 from dataclasses import asdict, replace
+from pathlib import Path
 from .windows import WindowCoordinator, windows
 from .contracts import Rational
 from .prototype import PrototypeFailure, DirectCapturedProfile, DirectSessionApiProfile
 from ..frigate.historical_v2 import PROFILE_0182, PIN_0182, ProviderFailure
 from ..frigate.historical_v2_api import ApiCut
-from .continuity_protocol import sha
+from .continuity_protocol import ProtocolError, sha
 from .media import ReaderLimits
 from .continuity import Plan, require
-from .continuity_worker import run_context
+from .continuity_worker import admit_worker_executable, run_context
 
 
 class RollingWindowCoordinator(WindowCoordinator):
@@ -47,9 +48,7 @@ class RollingWindowCoordinator(WindowCoordinator):
                 if self._observer:self._observer('plan',ordered,None)
                 raise ProviderFailure('source-unavailable-or-unsafe')
             require(time.monotonic()<=deadline-self.core_seconds+30,'product-preparation-deadline')
-            with open(self.profile.worker,'rb') as f:
-                worker=f.read((8<<20)+1)
-            require(len(worker)<=8<<20 and sha(worker)==WORKER_SHA256,'product-worker-identity')
+            admit_worker_executable(self.profile.worker, self.worker_sha256 if self.worker_sha256 is not None else WORKER_SHA256)
             plan=ProductPlan(request,self._record['owner'],native_items,provider.snapshot,sha(trust),
                 tuple(str(provider._items[i.item_id][1]) for i in native_items))
             execution_deadline=min(deadline,time.monotonic()+self.context_seconds)
@@ -93,7 +92,7 @@ class RollingWindowCoordinator(WindowCoordinator):
             check();bundle.add_file(entry,request,provider.snapshot.sha256)
             response['processed']+=1;response['unprocessed']-=1
             if self._observer:self._observer('file',entry,dict(bundle.files[-1]))
-        outcome=run_context(self.profile.worker,plan,request,self._record['owner'],uuid.uuid4().hex,trust,load,publish,check,timeout=min(self.context_seconds,max(.05,deadline-time.monotonic())))
+        outcome=run_context(self.profile.worker,plan,request,self._record['owner'],uuid.uuid4().hex,trust,load,publish,check,timeout=min(self.context_seconds,max(.05,deadline-time.monotonic())),worker_sha256=self.worker_sha256 if self.product_mode else None)
         if self.product_mode:self._record['native_metrics']=outcome.metrics
         response['execution']={'state':outcome.state,'error':outcome.error,'pid':outcome.pid,'reaped':outcome.reaped,'consumed':outcome.consumed}
         if outcome.state!='EXITED_SUCCESSFULLY':
@@ -112,5 +111,20 @@ class ProductRollingWindowCoordinator(RollingWindowCoordinator):
     resource_profile='candidate-rolling-product-v1'
     execution_profile='candidate-rolling-product-v1'
 
-    def __init__(self,profile,**kwargs):
+    def __init__(self,profile,*,worker_sha256=None,**kwargs):
         super().__init__(profile,lambda *args:None,**kwargs)
+        self.worker_sha256=worker_sha256
+
+
+def isolated_product_coordinator(profile,worker,sha256,**kwargs):
+    """Bind one absolute executable path to one expected SHA-256.
+
+    The default product coordinator leaves ``worker_sha256`` unset and continues
+    to require ``WORKER_SHA256``. This function does not search a directory,
+    read an environment variable, or select another executable.
+    """
+    path=Path(worker)
+    if (type(sha256) is not str or len(sha256)!=64 or any(c not in '0123456789abcdef' for c in sha256)
+            or not path.is_absolute()):
+        raise ProtocolError('product-worker-identity')
+    return ProductRollingWindowCoordinator(replace(profile,worker=path),worker_sha256=sha256,**kwargs)

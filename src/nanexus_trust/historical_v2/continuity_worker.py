@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 import hashlib
 import os
 import signal
+import stat
 import subprocess
 import time
 from pathlib import Path
@@ -27,7 +28,57 @@ class Outcome:
     metrics: dict | None = None
 
 
-def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*,timeout=45,_fault='normal'):
+def _read_fd(fd, size):
+    blob = bytearray()
+    while len(blob) < size:
+        chunk = os.read(fd, size - len(blob))
+        if not chunk:
+            break
+        blob.extend(chunk)
+    return bytes(blob)
+
+
+def admit_worker_executable(executable, expected_sha256):
+    """Hash one explicit regular file. No directory search, environment lookup, or fallback."""
+    require(type(expected_sha256) is str and len(expected_sha256) == 64
+            and all(c in '0123456789abcdef' for c in expected_sha256), 'product-worker-identity')
+    path = Path(executable)
+    require(path.is_absolute(), 'product-worker-identity')
+    try:
+        info = path.lstat()
+    except OSError as exc:
+        raise ProtocolError('product-worker-identity') from exc
+    require(stat.S_ISREG(info.st_mode) and not stat.S_ISLNK(info.st_mode), 'product-worker-identity')
+    try:
+        resolved = path.resolve(strict=True)
+        fd = os.open(resolved, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    except OSError as exc:
+        raise ProtocolError('product-worker-identity') from exc
+    try:
+        current = os.fstat(fd)
+        require(stat.S_ISREG(current.st_mode) and 0 < current.st_size <= 8 << 20, 'product-worker-identity')
+        require((current.st_dev, current.st_ino) == (info.st_dev, info.st_ino), 'product-worker-identity')
+        blob = _read_fd(fd, current.st_size)
+        require(len(blob) == current.st_size and sha(blob) == expected_sha256, 'product-worker-identity')
+        again = os.fstat(fd)
+        require((again.st_dev, again.st_ino, again.st_size, again.st_mtime_ns)
+                == (current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns), 'product-worker-identity')
+    finally:
+        os.close(fd)
+    return resolved, (current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns)
+
+
+def confirm_worker_executable(path, identity):
+    """Recheck the inode immediately before exec. This narrows, but does not close, pathname TOCTOU."""
+    try:
+        info = Path(path).lstat()
+    except OSError as exc:
+        raise ProtocolError('product-worker-identity') from exc
+    require(stat.S_ISREG(info.st_mode) and not stat.S_ISLNK(info.st_mode), 'product-worker-identity')
+    require((info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns) == identity, 'product-worker-identity')
+
+
+def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*,timeout=45,_fault='normal',worker_sha256=None):
     """Trusted caller supplies admitted Plan and safe direct Reader callback.
 
     load(index, check) returns (original receipt, tuple[Nal], catalog metadata)
@@ -50,7 +101,14 @@ def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*
         if time.monotonic()>deadline:raise TimeoutError('context-deadline')
     try:
         guard()
-        process=subprocess.Popen([str(Path(executable).resolve()),str(os.getpid()),_fault],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True,close_fds=True,env={'LANG':'C','LC_ALL':'C'})
+        if product:
+            from .rolling_product import WORKER_SHA256
+            resolved,identity=admit_worker_executable(executable,WORKER_SHA256 if worker_sha256 is None else worker_sha256)
+            confirm_worker_executable(resolved,identity)
+            argv0=str(resolved)
+        else:
+            argv0=str(Path(executable).resolve())
+        process=subprocess.Popen([argv0,str(os.getpid()),_fault],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True,close_fds=True,env={'LANG':'C','LC_ALL':'C'})
         for f in (process.stdin,process.stdout,process.stderr):os.set_blocking(f.fileno(),False)
         stderr=0
         def pump():
