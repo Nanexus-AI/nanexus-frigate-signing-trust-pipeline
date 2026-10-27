@@ -7,6 +7,7 @@ import hashlib
 import os
 import signal
 import stat
+import struct
 import subprocess
 import time
 from pathlib import Path
@@ -78,6 +79,194 @@ def confirm_worker_executable(path, identity):
     require((info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns) == identity, 'product-worker-identity')
 
 
+# Pinned ONVIF Media Signing Framework identity. The directory comes from the executable, not from a checkout.
+OMS_SONAME = 'libmedia-signing-framework.so.25'
+OMS_SHA256 = 'e157fd03c14ba2ae63ce19800cb00d994bc4500a80d84f88492d5537cda76c98'
+_LIB_CAP = 8 << 20
+_DT_NEEDED = 1
+_DT_STRTAB = 5
+_DT_STRSZ = 10
+_DT_RUNPATH = 29
+_PT_LOAD = 1
+_PT_DYNAMIC = 2
+
+
+def _oms(value, reason='oms-library-identity'):
+    if not value:
+        raise ProtocolError(reason)
+
+
+def _elf_need_and_runpath(blob):
+    """Read this executable's DT_NEEDED names and its one DT_RUNPATH string.
+
+    This is not a loader. Other dynamic tags, including DT_RPATH, are ignored.
+    """
+    _oms(len(blob) >= 64 and blob[:4] == b'\x7fELF' and blob[4] == 2 and blob[5] == 1 and blob[6] == 1)
+    _oms(struct.unpack_from('<H', blob, 16)[0] in (2, 3) and struct.unpack_from('<H', blob, 18)[0] == 62)
+    _oms(struct.unpack_from('<I', blob, 20)[0] == 1)
+    phoff = struct.unpack_from('<Q', blob, 32)[0]
+    ehsize, phentsize, phnum = struct.unpack_from('<HHH', blob, 52)
+    _oms(ehsize == 64 and phentsize == 56 and 1 <= phnum <= 64)
+    _oms(phoff + phnum * phentsize <= len(blob))
+    loads = []
+    dynamic = None
+    for index in range(phnum):
+        off = phoff + index * phentsize
+        ptype, _, poff, paddr, _, filesz, _, _ = struct.unpack_from('<IIQQQQQQ', blob, off)
+        _oms(poff <= len(blob) and filesz <= len(blob) - poff)
+        if ptype == _PT_LOAD and filesz:
+            loads.append((poff, paddr, filesz))
+        elif ptype == _PT_DYNAMIC:
+            _oms(dynamic is None and filesz and filesz % 16 == 0 and filesz // 16 <= 128)
+            dynamic = (poff, filesz)
+    _oms(dynamic is not None and loads)
+    dynoff, dynsz = dynamic
+    needed = []
+    runpath = None
+    strtab = strsz = None
+    saw_null = False
+    for cursor in range(dynoff, dynoff + dynsz, 16):
+        tag, val = struct.unpack_from('<QQ', blob, cursor)
+        if tag == 0:
+            saw_null = True
+            break
+        elif tag == _DT_NEEDED:
+            needed.append(val)
+        elif tag == _DT_STRTAB:
+            _oms(strtab is None)
+            strtab = val
+        elif tag == _DT_STRSZ:
+            _oms(strsz is None and 0 < val <= 1 << 20)
+            strsz = val
+        elif tag == _DT_RUNPATH:
+            _oms(runpath is None)
+            runpath = val
+    _oms(saw_null and strtab is not None and strsz is not None and runpath is not None and needed)
+    def map_vaddr(vaddr, size):
+        for poff, paddr, filesz in loads:
+            if paddr <= vaddr and vaddr - paddr <= filesz - size:
+                return poff + (vaddr - paddr)
+        raise ProtocolError('oms-library-identity')
+    strings = blob[map_vaddr(strtab, strsz):map_vaddr(strtab, strsz) + strsz]
+    def text(offset):
+        _oms(offset < len(strings))
+        end = strings.find(b'\0', offset)
+        _oms(end >= 0)
+        try:
+            return strings[offset:end].decode('ascii')
+        except UnicodeError as exc:
+            raise ProtocolError('oms-library-identity') from exc
+    names = [text(item) for item in needed]
+    _oms(names.count(OMS_SONAME) == 1)
+    return text(runpath)
+
+
+def _runpath_directory(raw, origin):
+    """One absolute directory, or one directory expressed only with $ORIGIN."""
+    _oms(isinstance(raw, str) and 0 < len(raw) <= 4096 and '\x00' not in raw and ':' not in raw)
+    if raw.startswith('/'):
+        _oms('$' not in raw)
+        expanded = raw
+    else:
+        marker = '\0'
+        expanded = raw.replace('${ORIGIN}', marker).replace('$ORIGIN', marker)
+        _oms(marker in expanded and '$' not in expanded)
+        expanded = expanded.replace(marker, origin)
+        _oms(expanded.startswith('/'))
+    try:
+        directory = Path(expanded).resolve(strict=True)
+        info = directory.lstat()
+    except (OSError, RuntimeError) as exc:
+        raise ProtocolError('oms-library-identity') from exc
+    _oms(stat.S_ISDIR(info.st_mode) and not stat.S_ISLNK(info.st_mode))
+    return directory
+
+
+def _reject_hwcaps_override(directory):
+    """Refuse the directory glibc searches before the RUNPATH directory itself.
+
+    glibc opens glibc-hwcaps/<cpu-level>/<SONAME> ahead of <SONAME>. The active
+    level is a host property, so any entry of this name is an ambiguous path.
+    """
+    try:
+        os.lstat(directory / 'glibc-hwcaps')
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise ProtocolError('oms-library-identity') from exc
+    raise ProtocolError('oms-library-identity')
+
+
+def resolved_oms_library(executable):
+    """Resolve the OMS SONAME inside the executable's one DT_RUNPATH directory.
+
+    The launch environment carries no LD_LIBRARY_PATH. A missing RUNPATH entry would
+    otherwise fall through to the ld cache and the default system directories; this
+    function does not. A glibc-hwcaps entry in the selected directory is refused.
+    A SONAME symlink is accepted only when it names one regular file in that same
+    directory. The returned file is what the check hashes.
+    """
+    path = Path(executable)
+    try:
+        resolved = path.resolve(strict=True)
+        info = resolved.lstat()
+    except (OSError, RuntimeError) as exc:
+        raise ProtocolError('oms-library-identity') from exc
+    _oms(stat.S_ISREG(info.st_mode) and not stat.S_ISLNK(info.st_mode) and 0 < info.st_size <= 8 << 20)
+    try:
+        fd = os.open(resolved, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    except OSError as exc:
+        raise ProtocolError('oms-library-identity') from exc
+    try:
+        blob = _read_fd(fd, info.st_size)
+        _oms(len(blob) == info.st_size)
+    finally:
+        os.close(fd)
+    directory = _runpath_directory(_elf_need_and_runpath(blob), str(resolved.parent))
+    _reject_hwcaps_override(directory)
+    candidate = directory / OMS_SONAME
+    try:
+        kind = candidate.lstat()
+    except OSError as exc:
+        raise ProtocolError('oms-library-identity') from exc
+    if stat.S_ISLNK(kind.st_mode):
+        try:
+            target = os.readlink(candidate)
+        except OSError as exc:
+            raise ProtocolError('oms-library-identity') from exc
+        _oms(target and '/' not in target and target not in ('.', '..') and '\x00' not in target)
+        final = directory / target
+        try:
+            kind = final.lstat()
+        except OSError as exc:
+            raise ProtocolError('oms-library-identity') from exc
+        _oms(stat.S_ISREG(kind.st_mode) and not stat.S_ISLNK(kind.st_mode) and final.parent == directory)
+    else:
+        final = candidate
+        _oms(stat.S_ISREG(kind.st_mode) and final.parent == directory)
+    return final
+
+
+def admit_oms_library(executable):
+    """Require the pinned OMS bytes before exec.
+
+    Path and hash checks narrow the launch, but a replacement after this open and
+    before the dynamic loader's open can still change what the process maps.
+    """
+    final = resolved_oms_library(executable)
+    try:
+        fd = os.open(final, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    except OSError as exc:
+        raise ProtocolError('oms-library-identity') from exc
+    try:
+        info = os.fstat(fd)
+        _oms(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= _LIB_CAP)
+        blob = _read_fd(fd, info.st_size)
+        _oms(len(blob) == info.st_size and sha(blob) == OMS_SHA256)
+    finally:
+        os.close(fd)
+
+
 def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*,timeout=45,_fault='normal',worker_sha256=None):
     """Trusted caller supplies admitted Plan and safe direct Reader callback.
 
@@ -105,6 +294,7 @@ def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*
             from .rolling_product import WORKER_SHA256
             resolved,identity=admit_worker_executable(executable,WORKER_SHA256 if worker_sha256 is None else worker_sha256)
             confirm_worker_executable(resolved,identity)
+            admit_oms_library(resolved)
             argv0=str(resolved)
         else:
             argv0=str(Path(executable).resolve())
