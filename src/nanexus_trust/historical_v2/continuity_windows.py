@@ -2,8 +2,9 @@
 from dataclasses import asdict, replace
 from .windows import WindowCoordinator, windows
 from .contracts import Rational
-from .prototype import PrototypeFailure, DirectCapturedProfile
-from ..frigate.historical_v2 import PROFILE_0182, PIN_0182
+from .prototype import PrototypeFailure, DirectCapturedProfile, DirectSessionApiProfile
+from ..frigate.historical_v2 import PROFILE_0182, PIN_0182, ProviderFailure
+from ..frigate.historical_v2_api import ApiCut
 from .continuity_protocol import sha
 from .media import ReaderLimits
 from .continuity import Plan, require
@@ -19,7 +20,10 @@ class RollingWindowCoordinator(WindowCoordinator):
     execution_profile='qualified-rolling-four-originals-experimental-v1'
 
     def __init__(self,profile,resolve_plan,**kwargs):
-        if type(profile) is not DirectCapturedProfile or profile.provider_profile!=PROFILE_0182 or profile.snapshot.source_pin!=PIN_0182:
+        captured=type(profile) is DirectCapturedProfile and profile.provider_profile==PROFILE_0182 and profile.snapshot.source_pin==PIN_0182
+        # The candidate product plan binds whichever catalog observation the
+        # request used; the qualified non-product Plan resolver is captured-only.
+        if not captured and not (type(profile) is DirectSessionApiProfile and self.product_mode):
             raise TypeError('pinned direct captured profile required')
         if not callable(resolve_plan):raise TypeError('private trusted Plan resolver required')
         super().__init__(profile,**kwargs);self._resolve_plan=resolve_plan
@@ -27,19 +31,27 @@ class RollingWindowCoordinator(WindowCoordinator):
     def _verify_many(self,provider,items,bounds,cancel,request,camera,request_id,permission,event,deadline,check,response):
         import time,uuid
         bundle=self._record['bundle'];ordered=tuple(items)
+        unavailable=set(getattr(self,'_unreadable_sources',()))
+        native_items=tuple(i for i in ordered if i.item_id not in unavailable)
         permission();check()
-        require(provider.snapshot==self.profile.snapshot,'qualified-snapshot')
+        if type(self.profile) is DirectSessionApiProfile:
+            require(type(provider.snapshot) is ApiCut and provider.snapshot.source_pin==PIN_0182 and provider.observed,'qualified-snapshot')
+        else:
+            require(provider.snapshot==self.profile.snapshot,'qualified-snapshot')
         with open(self.profile.public_ca,'rb') as f:trust=f.read(32769)
         require(0<len(trust)<=32768,'context-trust')
         if self.product_mode:
             self._record['planned_count']=len(ordered)
             from .rolling_product import ProductPlan, WORKER_SHA256
+            if not native_items:
+                if self._observer:self._observer('plan',ordered,None)
+                raise ProviderFailure('source-unavailable-or-unsafe')
             require(time.monotonic()<=deadline-self.core_seconds+30,'product-preparation-deadline')
             with open(self.profile.worker,'rb') as f:
                 worker=f.read((8<<20)+1)
             require(len(worker)<=8<<20 and sha(worker)==WORKER_SHA256,'product-worker-identity')
-            plan=ProductPlan(request,self._record['owner'],ordered,provider.snapshot,sha(trust),
-                tuple(str(provider._items[i.item_id][1]) for i in ordered))
+            plan=ProductPlan(request,self._record['owner'],native_items,provider.snapshot,sha(trust),
+                tuple(str(provider._items[i.item_id][1]) for i in native_items))
             execution_deadline=min(deadline,time.monotonic()+self.context_seconds)
             bounds=replace(bounds,deadline_monotonic=Rational(int(execution_deadline*1000000),1000000))
             self.execution_profile='candidate-rolling-product-v1'
@@ -55,15 +67,17 @@ class RollingWindowCoordinator(WindowCoordinator):
         permission();check()
         response.update(windows=[],processed=0,unprocessed=len(ordered),input={'nal_occurrences':0,'annex_b_bytes':0})
         # Same 30/29 membership, reference overlap is never re-fed.
+        # Native receives only originals that opened. The published plan keeps
+        # every catalog overlap so an absent file is not an empty selection.
         seen=set()
-        for wi,members in enumerate(windows(len(ordered))):
-            response['windows'].append({'members':[ordered[i].item_id for i in members],'overlap':ordered[members[0]].item_id if wi else None})
+        for wi,members in enumerate(windows(len(native_items))):
+            response['windows'].append({'members':[native_items[i].item_id for i in members],'overlap':native_items[members[0]].item_id if wi else None})
             for index in members[1:] if wi else members:
                 require(index not in seen,'duplicate-window-feed');seen.add(index)
-        require(seen==set(range(len(ordered))),'window-plan')
+        require(seen==set(range(len(native_items))),'window-plan')
         if self._observer:self._observer('plan',ordered,None)
         def load(index,guard):
-            item=ordered[index];guard()
+            item=native_items[index];guard()
             limits=ReaderLimits(max_bytes=8<<20,max_nals=1024,timeout_seconds=min(5,max(.01,deadline-time.monotonic())))
             with self._input(provider,item,bounds,cancel,check,limits) as (handle,reader):
                 nals=[];size=0
@@ -84,7 +98,10 @@ class RollingWindowCoordinator(WindowCoordinator):
         response['execution']={'state':outcome.state,'error':outcome.error,'pid':outcome.pid,'reaped':outcome.reaped,'consumed':outcome.consumed}
         if outcome.state!='EXITED_SUCCESSFULLY':
             raise PrototypeFailure('CANCELLED' if event.is_set() else 'EXECUTION_FAILED')
-        response['status']='RESULT'
+        if unavailable:
+            response['status']='SOURCE_UNAVAILABLE'
+            response['reason']='Selected catalog recordings include originals that could not be read. Readable originals were verified whole; unavailable sources have no signing finding.'
+        else:response['status']='RESULT'
 
 
 class ProductRollingWindowCoordinator(RollingWindowCoordinator):

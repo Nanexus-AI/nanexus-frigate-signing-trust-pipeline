@@ -8,9 +8,9 @@ import json
 import threading
 import time
 import uuid
-from .prototype import Coordinator, DirectCapturedProfile, DirectApiProfile, PrototypeFailure
+from .prototype import Coordinator, DirectCapturedProfile, DirectApiProfile, DirectSessionApiProfile, PrototypeFailure
 from .window_results import Bundle, ResultLimit, summary_bytes
-from ..frigate.historical_v2_api import WindowApiProvider
+from ..frigate.historical_v2_api import WindowApiProvider, SessionWindowApiProvider
 from ..frigate.historical_v2 import FrigateHistoricalProvider
 from .window_inventory import window_inventory
 
@@ -43,10 +43,11 @@ class WindowCoordinator(Coordinator):
     execution_profile = 'direct-independent-window-experimental-v1'
     captured_provider = WindowCapturedProvider
     api_provider = WindowApiProvider
+    session_api_provider = SessionWindowApiProvider
     window_mode = True
 
     def __init__(self,profile,*,clock=time.monotonic,observer=None):
-        if type(profile) not in (DirectCapturedProfile,DirectApiProfile):
+        if type(profile) not in (DirectCapturedProfile,DirectApiProfile,DirectSessionApiProfile):
             raise TypeError('explicit direct window profile required')
         super().__init__(profile)
         self._clock=clock; self._result_lock=threading.RLock(); self._record=None
@@ -69,7 +70,7 @@ class WindowCoordinator(Coordinator):
         with self._result_lock:
             if self._record is record:self._expire()
 
-    def run(self,owner,camera,start,end,request_id,permission):
+    def run(self,owner,camera,start,end,request_id,permission,*,cookie=None):
         permission()
         if type(owner) is not str or not 0<len(owner)<=256: raise PrototypeFailure('UNAUTHORIZED')
         with self._result_lock:
@@ -79,12 +80,15 @@ class WindowCoordinator(Coordinator):
                         bundle=Bundle(),summary=None,expires=None,deadline=self._clock()+OPERATION_SECONDS)
             self._record=record
         try:
-            response=super().verify(camera,start,end,request_id,permission)
+            response=super().verify(camera,start,end,request_id,permission,caller=None if cookie is None else (owner,cookie))
             permission()
             if response['status']!='RESULT' and ('reason' not in response or response['reason']=='SELECTION_TOO_LARGE'):
+                empty=('No retained recordings in the selected time range.'
+                       if type(self.profile) is DirectSessionApiProfile
+                       else 'No recordings were selected in this bounded catalog observation.')
                 response['reason']={'LIMIT':'Verification exceeded an input, result or execution limit.',
                     'CANCELLED':'Verification was cancelled; no further files were processed.',
-                    'NO_MATCHING_RECORDING':'No recordings were selected in this bounded catalog observation.'
+                    'NO_MATCHING_RECORDING':empty
                     }.get(response['status'],'Verification stopped after an operational failure.')
             with self._result_lock:
                 if self._closed or self._record is not record:raise PrototypeFailure('UNAVAILABLE')

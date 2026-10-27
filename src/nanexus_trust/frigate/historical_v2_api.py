@@ -13,9 +13,9 @@ import math
 from pathlib import Path
 import re
 import time
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
 
 from .historical_v2 import FrigateHistoricalProvider, PIN_0182, PROFILE_0182, ProviderFailure
 from ..historical_v2.contracts import Interval, Quality
@@ -50,6 +50,104 @@ def _pairs(values):
     return result
 
 
+def _read(opener, url, headers, cap, deadline, guard, denied='API_UNAVAILABLE'):
+    """One bounded, non-redirected, identity-encoded GET."""
+    try:
+        with opener.open(Request(url, headers=headers), timeout=2) as response:
+            if response.status != 200:
+                raise ProviderFailure('API_UNAVAILABLE')
+            declared = response.headers.get('Content-Length')
+            if declared is not None:
+                if not declared.isdigit():
+                    raise ProviderFailure('API_INCOMPLETE_RESPONSE')
+                declared = int(declared)
+                if declared > cap:
+                    raise ProviderFailure('API_RESPONSE_LIMIT')
+            if response.headers.get('Content-Encoding', 'identity') != 'identity':
+                raise ProviderFailure('API_RESPONSE_ENCODING_UNSUPPORTED')
+            raw = bytearray()
+            while True:
+                guard()
+                if time.monotonic() >= deadline:
+                    raise ProviderFailure('API_DEADLINE')
+                # A single buffered/raw read returns available bytes so a
+                # slow trickle cannot keep a filling read(n) alive forever.
+                data = response.read1(min(8192, cap - len(raw) + 1))
+                if not data:
+                    if declared is not None and len(raw) != declared:
+                        raise ProviderFailure('API_INCOMPLETE_RESPONSE')
+                    return bytes(raw)
+                raw.extend(data)
+                if len(raw) > cap:
+                    raise ProviderFailure('API_RESPONSE_LIMIT')
+    except HTTPError as exc:
+        raise ProviderFailure(denied if exc.code in (401, 403) else 'API_UNAVAILABLE') from exc
+    except (URLError, HTTPException, OSError, ValueError) as exc:
+        raise ProviderFailure('API_UNAVAILABLE') from exc
+
+
+_COOKIE_VALUE = re.compile(r'[A-Za-z0-9_.-]{1,3072}')
+
+
+def caller_cookie(value, name='frigate_token'):
+    """The caller's one native session cookie; every other cookie is dropped."""
+    if type(value) is not str or len(value) > 4096 or any(ord(c) < 32 or ord(c) > 126 for c in value):
+        raise ProviderFailure('access-denied-or-revoked')
+    found = []
+    for field in value.split(';'):
+        key, sep, token = field.strip().partition('=')
+        if key == name:
+            if not sep or not _COOKIE_VALUE.fullmatch(token):
+                raise ProviderFailure('access-denied-or-revoked')
+            found.append(token)
+    if len(found) != 1:
+        raise ProviderFailure('access-denied-or-revoked')
+    return name + '=' + found[0]
+
+
+class FrigateSession:
+    """Frigate's authenticated listener, called with the caller's own session.
+
+    origin must be the listener that runs Frigate's /auth check. The internal
+    unauthenticated listener answers /api/profile as 'anonymous' and is refused.
+    No deployment bearer, Remote-* header or Set-Cookie is ever used.
+    """
+    def __init__(self, origin, context=None):
+        self.origin = endpoint(origin)
+        if urlsplit(self.origin).scheme == 'https' and context is None:
+            raise ValueError('explicit TLS context required')
+        self.context = context
+
+    def opener(self):
+        handlers = [_NoRedirect()]
+        if self.context is not None:
+            handlers.append(HTTPSHandler(context=self.context))
+        return build_opener(*handlers)
+
+    def headers(self, cookie):
+        return {'Accept': 'application/json', 'Cache-Control': 'no-cache', 'X-Cache-Bypass': '1',
+                'Cookie': caller_cookie(cookie)}
+
+    def get(self, cookie, target, cap, deadline, guard=lambda: None):
+        return _read(self.opener(), self.origin + target, self.headers(cookie), cap, deadline, guard,
+                     denied='access-denied-or-revoked')
+
+    def authorize(self, cookie, owner, camera, deadline, guard=lambda: None):
+        """Same principal, and camera in Frigate's effective allowed_cameras."""
+        raw = self.get(cookie, '/api/profile', 32768, deadline, guard)
+        try:
+            profile = json.loads(raw, object_pairs_hook=_pairs,
+                                 parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+        except (ValueError, RecursionError) as exc:
+            raise ProviderFailure('access-denied-or-revoked') from exc
+        if (type(profile) is not dict or set(profile) != {'username', 'role', 'allowed_cameras'}
+                or type(profile['username']) is not str or profile['username'] != owner
+                or owner.lower() == 'anonymous' or type(profile['allowed_cameras']) is not list
+                or any(type(c) is not str for c in profile['allowed_cameras'])
+                or camera not in profile['allowed_cameras']):
+            raise ProviderFailure('access-denied-or-revoked')
+
+
 @dataclass(frozen=True)
 class ApiCut:
     """Identity of exact version/metadata bytes and bound request; not SQLite."""
@@ -74,8 +172,7 @@ class ApiProvider(FrigateHistoricalProvider):
         self.profile = API_PROFILE
         self.observed = False
 
-    def _get(self, target, cap, bounds, cancel):
-        self._guard(self.camera, bounds, cancel)
+    def _headers(self):
         headers = {'Accept': 'application/json', 'Cache-Control': 'no-cache'}
         if self.token_file is not None:
             with self.token_file.open('rb') as stream:
@@ -83,38 +180,17 @@ class ApiProvider(FrigateHistoricalProvider):
             if not 0 < len(token) <= 4096 or any(c < 33 or c > 126 for c in token):
                 raise ProviderFailure('API_CREDENTIAL_UNAVAILABLE')
             headers['Authorization'] = 'Bearer ' + token.decode('ascii')
-        deadline = min(time.monotonic() + 2, bounds.deadline_monotonic.numerator /
-                       bounds.deadline_monotonic.denominator)
-        try:
-            with build_opener(_NoRedirect()).open(Request(self.origin + target, headers=headers), timeout=2) as response:
-                if response.status != 200:
-                    raise ProviderFailure('API_UNAVAILABLE')
-                declared = response.headers.get('Content-Length')
-                if declared is not None:
-                    if not declared.isdigit():
-                        raise ProviderFailure('API_INCOMPLETE_RESPONSE')
-                    declared = int(declared)
-                    if declared > cap:
-                        raise ProviderFailure('API_RESPONSE_LIMIT')
-                if response.headers.get('Content-Encoding', 'identity') != 'identity':
-                    raise ProviderFailure('API_RESPONSE_ENCODING_UNSUPPORTED')
-                raw = bytearray()
-                while True:
-                    self._guard(self.camera, bounds, cancel)
-                    if time.monotonic() >= deadline:
-                        raise ProviderFailure('API_DEADLINE')
-                    # A single buffered/raw read returns available bytes so a
-                    # slow trickle cannot keep a filling read(n) alive forever.
-                    data = response.read1(min(8192, cap - len(raw) + 1))
-                    if not data:
-                        if declared is not None and len(raw) != declared:
-                            raise ProviderFailure('API_INCOMPLETE_RESPONSE')
-                        return bytes(raw)
-                    raw.extend(data)
-                    if len(raw) > cap:
-                        raise ProviderFailure('API_RESPONSE_LIMIT')
-        except (URLError, HTTPException, OSError, ValueError) as exc:
-            raise ProviderFailure('API_UNAVAILABLE') from exc
+        return headers
+
+    def _deadline(self, bounds):
+        return min(time.monotonic() + 2, bounds.deadline_monotonic.numerator /
+                   bounds.deadline_monotonic.denominator)
+
+    def _get(self, target, cap, bounds, cancel):
+        self._guard(self.camera, bounds, cancel)
+        headers = self._headers()
+        return _read(build_opener(_NoRedirect()), self.origin + target, headers, cap, self._deadline(bounds),
+                     lambda: self._guard(self.camera, bounds, cancel))
 
     def discover(self, request, cancel):
         self._guard(request.camera, request.bounds, cancel)
@@ -209,3 +285,30 @@ class WindowApiProvider(ApiProvider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.profile = 'frigate-0.18.2-cfa08c5-recordings-api-window-experimental-v1'
+
+
+class SessionWindowApiProvider(WindowApiProvider):
+    """Window discovery through the caller's own authenticated Frigate session.
+
+    One profile check and one recordings response per request. The resulting
+    item list is the request's frozen plan; it is never re-read.
+    """
+    def __init__(self, camera, session, cookie, owner, media_root, scratch_root, *, native_authorize):
+        if type(session) is not FrigateSession or type(owner) is not str or not owner:
+            raise ProviderFailure('native-authority-required')
+        self.session, self.owner = session, owner
+        self._cookie = caller_cookie(cookie)
+        super().__init__(camera, session.origin, None, media_root, scratch_root, native_authorize=native_authorize)
+
+    def _get(self, target, cap, bounds, cancel):
+        self._guard(self.camera, bounds, cancel)
+        return self.session.get(self._cookie, target, cap, self._deadline(bounds),
+                                lambda: self._guard(self.camera, bounds, cancel))
+
+    def discover(self, request, cancel):
+        self._guard(request.camera, request.bounds, cancel)
+        if self.observed:
+            raise ProviderFailure('API_SCOPE_UNSUPPORTED')
+        self.session.authorize(self._cookie, self.owner, self.camera.native_key, self._deadline(request.bounds),
+                               lambda: self._guard(request.camera, request.bounds, cancel))
+        return super().discover(request, cancel)

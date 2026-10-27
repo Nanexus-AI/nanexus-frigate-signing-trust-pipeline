@@ -1,7 +1,10 @@
 """Synthetic accepted authority, actual loopback HTTP and actual A composition."""
 import http.client
 import json
+import sqlite3
+from datetime import datetime, timezone
 import sys
+import tempfile
 import threading
 import time
 import unittest
@@ -12,7 +15,7 @@ import test_historical_v2_windows as fixtures
 from nanexus_trust.historical_v2.prototype import DirectCapturedProfile,PrototypeFailure
 from nanexus_trust.historical_v2.windows import WindowCoordinator
 from nanexus_trust.historical_v2 import contracts as a,wire
-from nanexus_trust.companion.window_http import WindowHTTP,Denied,handler,finding,install
+from nanexus_trust.companion.window_http import WindowHTTP,Denied,catalog_recording_dates,handler,finding,install
 
 BRIDGE=old.ROOT/'.local/runtime/hv2-ui3b-f2'
 if not BRIDGE.is_dir():raise unittest.SkipTest('accepted local UI-3B bridge required')
@@ -57,6 +60,7 @@ class HTTPTests(old.Harness):
         rid=self.submit();progress,_=self.ops.observe(self.cookie(),rid)
         self.assertEqual([f['state'] for f in progress['files']],['COMPLETED','PENDING','PENDING'])
         self.assertEqual(progress['files'][0]['finding'],'AMBER');self.assertLess(len(json.dumps(progress)),256<<10)
+        self.assertNotIn('query_coverage',progress)
         self.denied(409,self.ops.submit,self.cookie(),self.data)
         self.finish();result,_=self.ops.observe(self.cookie(),rid,True)
         self.assertEqual(result['state'],'COMPLETE');self.assertTrue(result['evidence_available'])
@@ -248,6 +252,7 @@ class HTTPTests(old.Harness):
         rid=self.submit();progress,_=self.ops.observe(self.cookie(),rid)
         self.assertEqual(progress['schema'],'nanexus-hv2-window-progress/1')
         self.assertEqual(progress['coverage'],'UNKNOWN')
+        self.assertNotIn('query_coverage',progress)
         self.assertEqual(progress['catalog_gaps_state'],'available')
         self.assertEqual(progress['catalog_gaps'],[])
         self.assertEqual([f['recording'] for f in progress['files']],['r0','r1','r2'])
@@ -257,6 +262,7 @@ class HTTPTests(old.Harness):
         self.assertEqual(result['catalog_gaps_state'],'available')
         self.assertEqual([f['finding'] for f in result['files']],['AMBER']*3)
         self.assertEqual(result['coverage'],'UNKNOWN')
+        self.assertNotIn('query_coverage',result)
         self.ops.release(self.cookie(),rid)
     def test_catalog_gap_failure_does_not_publish_empty_coverage(self):
         with patch('nanexus_trust.companion.window_http.project_catalog_gaps',side_effect=RuntimeError('projection')):
@@ -266,5 +272,122 @@ class HTTPTests(old.Harness):
         self.assertEqual(result['coverage'],'UNKNOWN')
         self.assertTrue(all('finding' in f and 'recording' in f for f in result['files']))
         self.ops.release(self.cookie(),rid)
+
+    def await_slot(self,expected):
+        for _ in range(100):
+            if self.ops.slot is expected:return
+            time.sleep(.02)
+        self.fail('slot did not reach the expected identity')
+
+    def reset_gate(self):
+        self.enter.clear();self.gate.clear();self.visited.clear();self.mode=None
+
+    def test_completion_stays_readable_then_releases_without_browser(self):
+        import nanexus_trust.companion.window_http as wh
+        with patch.object(wh,'CLEANUP_GRACE',.25):
+            rid=self.submit();self.finish();record=self.ops.slot
+            result,_=self.ops.observe(self.cookie(),rid,True)
+            self.assertEqual(result['state'],'COMPLETE');self.assertTrue(result['evidence_available'])
+            self.assertIs(self.ops.slot,record)
+            self.await_slot(None)
+            self.denied(404,self.ops.observe,self.cookie(),rid)
+            again,_=self.ops.release(self.cookie(),rid)
+            self.assertEqual(again,dict(request_id=rid,released=True))
+            self.reset_gate();new=self.submit()
+            self.assertNotEqual(new,rid);self.assertTrue(self.ops.slot['running'])
+            self.finish()
+
+    def test_cancel_without_release_frees_the_slot(self):
+        import nanexus_trust.companion.window_http as wh
+        with patch.object(wh,'CLEANUP_GRACE',.25):
+            rid=self.submit();self.ops.cancel(self.cookie(),rid);self.finish()
+            result,_=self.ops.observe(self.cookie(),rid,True)
+            self.assertEqual(result['state'],'CANCELLED')
+            self.await_slot(None)
+            self.reset_gate();self.assertNotEqual(self.submit(),rid);self.finish()
+
+    def test_failure_and_deadline_release_without_browser(self):
+        import nanexus_trust.companion.window_http as wh
+        with patch.object(wh,'CLEANUP_GRACE',.25):
+            self.mode='fail';rid=self.submit();self.finish()
+            result,_=self.ops.observe(self.cookie(),rid,True)
+            self.assertEqual(result['state'],'EXECUTION_FAILED')
+            self.await_slot(None)
+            self.reset_gate()
+            with patch.object(self.coordinator,'run',return_value={'status':'LIMIT','reason':'Operation exceeded its delivery deadline.'}):
+                value,_=self.ops.submit(self.cookie(),self.data)
+            limited=value['request_id'];self.ops.slot['thread'].join(2)
+            self.assertFalse(self.ops.slot['thread'].is_alive())
+            self.assertEqual(self.ops.observe(self.cookie(),limited,True)[0]['state'],'LIMIT')
+            self.await_slot(None)
+
+    def test_repeated_release_and_stale_cleanup_keep_the_newer_job(self):
+        import nanexus_trust.companion.window_http as wh
+        with patch.object(wh,'CLEANUP_GRACE',5):
+            rid=self.submit();self.finish();old=self.ops.slot
+            first,_=self.ops.release(self.cookie(),rid)
+            second,_=self.ops.release(self.cookie(),rid)
+            self.assertTrue(first['released'] and second['released']);self.assertIsNone(self.ops.slot)
+            self.assertFalse(self.ops._cleanup(old))
+            self.reset_gate();new=self.submit()
+            self.assertTrue(self.ops.slot['running']);self.assertEqual(self.ops.slot['id'],new)
+            self.assertFalse(self.ops._cleanup(old))
+            self.assertEqual(len([t for t in threading.enumerate() if t.name=='historical-window-http' and t.is_alive()]),1)
+            try:self.ops.submit(self.cookie(),self.data)
+            except Denied as e:self.assertEqual((e.status,e.running),(409,True))
+            else:self.fail('a second worker was admitted')
+            self.assertEqual(self.ops.slot['id'],new)
+            self.finish();self.assertFalse(self.ops.slot['running'])
+            try:self.ops.submit(self.cookie(),self.data)
+            except Denied as e:self.assertEqual((e.status,e.running),(409,False))
+            else:self.fail('grace slot was treated as free')
+            self.assertEqual(self.ops.slot['id'],new)
+            self.ops.release(self.cookie(),rid)
+            self.assertEqual(self.ops.slot['id'],new);self.assertFalse(self.ops.slot['running'])
+
+    def test_verify_conflict_reports_running_on_the_wire(self):
+        server=Server(('127.0.0.1',0),Handler);server.expected_host='127.0.0.1:'+str(server.server_port);server.expected_origin='https://test.invalid'
+        self.coordinator._observer=None
+        self.ops=install(server,self.access,self.service,self.coordinator);self.addCleanup(self.ops.close)
+        server.operations=Operations(self.access,lambda *args:(500,{}));server.bridge=self.access
+        thread=threading.Thread(target=server.serve_forever,kwargs={'poll_interval':.01},daemon=True);thread.start()
+        def request(body):
+            connection=http.client.HTTPConnection('127.0.0.1',server.server_port,timeout=2)
+            connection.request('POST','/window/verify',json.dumps(body),{'Host':server.expected_host,'Cookie':self.cookie(),'Content-Type':'application/json','Origin':server.expected_origin,'X-Nanexus-Request':'1'})
+            response=connection.getresponse();code=response.status;raw=response.read();connection.close();return code,json.loads(raw)
+        try:
+            code,value=request(self.data);self.assertEqual(code,202);self.assertTrue(self.enter.wait(2))
+            code,busy=request(self.data);self.assertEqual((code,busy),(409,{'error':'window_operation_unavailable','running':True}))
+            self.assertEqual(len([t for t in threading.enumerate() if t.name=='historical-window-http' and t.is_alive()]),1)
+            self.finish();code,finishing=request(self.data)
+            self.assertEqual((code,finishing),(409,{'error':'window_operation_unavailable','running':False}))
+            self.assertEqual(len([t for t in threading.enumerate() if t.name=='historical-window-http' and t.is_alive()]),0)
+        finally:server.shutdown();server.server_close();thread.join(1)
+
+class CatalogDayTests(unittest.TestCase):
+    def test_local_month_marks_only_dates_with_recordings(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'catalog.sqlite'
+            db=sqlite3.connect(path)
+            db.execute('CREATE TABLE recordings(id TEXT, camera TEXT, start_time REAL, end_time REAL)')
+            # 2026-10-24 15:04:53Z through 15:19:53Z is 11:04–11:19 at UTC-4.
+            db.execute('INSERT INTO recordings VALUES (?,?,?,?)',('a','hv2_corpus_signed',1792854293.765,1792855193.765))
+            db.commit();db.close()
+            marked=catalog_recording_dates(path,'hv2_corpus_signed','2026-10','UTC')
+            self.assertEqual(marked['dates'],['2026-10-24'])
+            self.assertEqual(marked['zone'],'UTC')
+            self.assertTrue(marked['complete'])
+            self.assertEqual(marked['meaning'],'catalog_recordings_present')
+            # 2026-10-01 03:30Z is still September 30 in America/New_York.
+            early=datetime(2026,10,1,3,30,tzinfo=timezone.utc).timestamp()
+            db=sqlite3.connect(path)
+            db.execute('INSERT INTO recordings VALUES (?,?,?,?)',('b','hv2_corpus_signed',early,early+60))
+            db.commit();db.close()
+            utc=catalog_recording_dates(path,'hv2_corpus_signed','2026-10','UTC')
+            york=catalog_recording_dates(path,'hv2_corpus_signed','2026-10','America/New_York')
+            self.assertIn('2026-10-01', utc['dates'])
+            self.assertNotIn('2026-10-01', york['dates'])
+            september=catalog_recording_dates(path,'hv2_corpus_signed','2026-09','America/New_York')
+            self.assertIn('2026-09-30', september['dates'])
 
 if __name__=='__main__':unittest.main()

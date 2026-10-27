@@ -14,7 +14,7 @@ from .media import read_nals, ReaderLimits, SourceLedger, MediaFailure
 from .placement import admit_single_file, AdmissionFailure
 from .worker_protocol import Attempt, sha
 from .worker_supervisor import Supervisor
-from ..frigate.historical_v2_api import ApiProvider, API_PROFILE, endpoint
+from ..frigate.historical_v2_api import ApiProvider, API_PROFILE, endpoint, FrigateSession
 from ..frigate.historical_v2 import FrigateHistoricalProvider, Snapshot, PROFILE_0182, PIN_0182, ProviderFailure
 
 SCHEMA='nanexus-hv2-prototype/1'
@@ -58,6 +58,24 @@ class DirectCapturedProfile(CapturedProfile):
 class DirectApiProfile(ApiProfile):
     """Same trusted API inventory; direct read-only original media input."""
 
+@dataclass(frozen=True)
+class DirectSessionApiProfile:
+    """Current retained recordings, discovered per request with the caller's session.
+
+    Window coordinators only. media_root is the host path of Frigate's
+    /media/frigate/recordings directory, read-only.
+    """
+    session: FrigateSession
+    media_root: Path
+    scratch_root: Path
+    worker: Path
+    public_ca: Path
+    ffprobe: Path
+    provider_profile: str = API_PROFILE
+    def __post_init__(self):
+        if type(self.session) is not FrigateSession:raise ValueError('caller-session Frigate access required')
+        if self.provider_profile!=API_PROFILE:raise ValueError('unsupported API profile')
+
 class _Cancel:
     def __init__(self,event):self.event=event
     def cancelled(self):return self.event.is_set()
@@ -80,6 +98,7 @@ class Coordinator:
     """One nonqueued Reader+Worker slot, no Live/legacy lock or durable state."""
     captured_provider=FrigateHistoricalProvider
     api_provider=ApiProvider
+    session_api_provider=None
     window_mode=False
     max_interval=900
     max_files=8
@@ -87,7 +106,8 @@ class Coordinator:
     resource_profile='prototype-multi-file-v1'
 
     def __init__(self,profile):
-        if type(profile) not in (CapturedProfile,ApiProfile,DirectCapturedProfile,DirectApiProfile):raise TypeError('explicit prototype profile required')
+        if type(profile) not in (CapturedProfile,ApiProfile,DirectCapturedProfile,DirectApiProfile,DirectSessionApiProfile):raise TypeError('explicit prototype profile required')
+        if type(profile) is DirectSessionApiProfile and self.session_api_provider is None:raise TypeError('caller-session discovery requires a window coordinator')
         self.profile=profile;self._slot=threading.Lock();self._lock=threading.Lock()
         self._active=None;self._closed=False;self._done=threading.Event();self._done.set()
     def cancel(self,camera,request_id):
@@ -100,7 +120,7 @@ class Coordinator:
             self._closed=True
             if self._active is not None:self._active[2].set()
         if not self._done.wait(23):raise RuntimeError('HV2 shutdown incomplete')
-    def verify(self,camera,start,end,request_id,permission):
+    def verify(self,camera,start,end,request_id,permission,*,caller=None):
         # Authority and the one-slot lifecycle are identical for both envelopes.
         request=a.Request(request_id,camera,a.Interval(start,end),'host-metadata-unix-seconds')
         if Decimal(end)-Decimal(start)>self.max_interval:raise PrototypeFailure('LIMIT')
@@ -128,7 +148,11 @@ class Coordinator:
             def authorized(cam):
                 try:permission();return cam==camera
                 except (ValueError,RuntimeError):return False
-            if type(profile) in (ApiProfile,DirectApiProfile):
+            if type(profile) is DirectSessionApiProfile:
+                if caller is None:raise PrototypeFailure('UNAUTHORIZED')
+                owner,cookie=caller
+                source=self.session_api_provider(camera,profile.session,cookie,owner,profile.media_root,profile.scratch_root,native_authorize=authorized)
+            elif type(profile) in (ApiProfile,DirectApiProfile):
                 source=self.api_provider(camera,profile.origin,profile.token_file,profile.media_root,profile.scratch_root,native_authorize=authorized)
             else:
                 source=self.captured_provider(camera,profile.snapshot,profile.media_root,profile.scratch_root,
@@ -138,7 +162,7 @@ class Coordinator:
                 response['selection']={'snapshot':provider.snapshot.sha256,'cut':provider.snapshot.cut_id,'provider':profile.provider_profile,
                     'requested':{'start':start,'end':end},'count':len(inventory.items),'count_exact':inventory.completeness is a.Quality.SATISFIED,'completeness':inventory.completeness.value,
                     'consistency':inventory.consistency.value,'ambiguous':list(inventory.ambiguous_refs),'whole_file':True}
-                if type(profile) in (ApiProfile,DirectApiProfile):
+                if type(profile) in (ApiProfile,DirectApiProfile,DirectSessionApiProfile):
                     response['profile']='api-whole-single-file-native-b-v1'
                     response['catalog']={'mode':'recordings-api','capability':provider.profile,
                         'source_pin':PIN_0182,'instance':provider.instance_id,'cut':provider.snapshot.cut_id,
@@ -158,7 +182,7 @@ class Coordinator:
                 # Detect alias rows without confusing repeated identical payloads
                 # with identical physical files. The pinned adapter owns these
                 # registered relative paths; they never enter the response.
-                identities=set()
+                identities=set();self._unreadable_sources=[]
                 for item in items:
                     check()
                     if (item.camera!=camera or item.coordinate!=request.coordinate or item.metadata_interval is None
@@ -172,7 +196,12 @@ class Coordinator:
                     try:
                         st=(profile.media_root/relative).stat(follow_symlinks=False)
                     except OSError as exc:
-                        if self._direct:raise ProviderFailure('source-unavailable-or-unsafe') from exc
+                        # Product requests keep the catalog overlap visible and verify
+                        # every original that can be opened. One absent neighbor must
+                        # not discard the whole interval or look like no selection.
+                        if self._direct and not getattr(self,'product_mode',False):
+                            raise ProviderFailure('source-unavailable-or-unsafe') from exc
+                        if self._direct:self._unreadable_sources.append(item.item_id)
                         continue # Staged profile retains file-local disposition.
                     identity=('inode',st.st_dev,st.st_ino)
                     if identity in identities:raise PrototypeFailure('DUPLICATE_RECORDING')
@@ -211,7 +240,7 @@ class Coordinator:
                 else 'LIMIT' if any(s in exc.reason for s in ('cap','size-or-type')) else 'SOURCE_UNAVAILABLE')
 
     def _verify_many(self,provider,items,bounds,cancel,request,camera,request_id,permission,event,deadline,check,response):
-        response.update(schema='nanexus-hv2-prototype-window/1',profile=('api-independent-files-native-b-v1' if type(self.profile) in (ApiProfile,DirectApiProfile) else 'captured-independent-files-native-b-v1'),
+        response.update(schema='nanexus-hv2-prototype-window/1',profile=('api-independent-files-native-b-v1' if type(self.profile) in (ApiProfile,DirectApiProfile,DirectSessionApiProfile) else 'captured-independent-files-native-b-v1'),
             files=[],processed=0,unprocessed=len(items),coverage='UNKNOWN',continuity='UNKNOWN')
         response['limitations'].append('independent-files-no-cross-file-signing-continuity')
         selection=response['selection']
@@ -275,7 +304,7 @@ class Coordinator:
 
     @property
     def _direct(self):
-        return type(self.profile) in (DirectCapturedProfile,DirectApiProfile)
+        return type(self.profile) in (DirectCapturedProfile,DirectApiProfile,DirectSessionApiProfile)
 
     @contextmanager
     def _input(self,provider,item,bounds,cancel,check,limits):
@@ -331,5 +360,5 @@ class Coordinator:
         response['result']={'page':json.loads(base),'sha256':sha(base),'size':len(base),
             'objects':[{'id':k,'sha256':sha(raw),'size':len(raw),'encoding':'base64','data':base64.b64encode(raw).decode()} for k,raw in composed.objects],
             'source_ledger':facts,'original_file_sha256':processing}
-        if type(profile) in (ApiProfile,DirectApiProfile):response['result']['original_file_bytes']=processing_bytes
+        if type(profile) in (ApiProfile,DirectApiProfile,DirectSessionApiProfile):response['result']['original_file_bytes']=processing_bytes
         response['status']='RESULT' if op is None else {'cancel':'CANCELLED','resource':'LIMIT','interrupted':'INTERRUPTED','failure':'EXECUTION_FAILED'}[op]

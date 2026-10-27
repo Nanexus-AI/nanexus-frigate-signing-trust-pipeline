@@ -5,23 +5,141 @@ WindowHTTP(access, coordinator, service._hv2_camera) as server.window_operations
 Existing handlers, authority and consume-once operations remain unchanged.
 """
 import json
+import os
 import re
 import secrets
+import sqlite3
 import threading
 import time
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from decimal import Decimal
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit, parse_qs, urlencode
 from ..historical_v2 import contracts as a, wire, composition as c
 from ..historical_v2.windows import WindowCoordinator, TTL
-from ..historical_v2.prototype import PrototypeFailure
+from ..historical_v2.prototype import PrototypeFailure, DirectSessionApiProfile
+from ..frigate.historical_v2 import ProviderFailure
 from ..historical_v2.catalog_gaps import project_catalog_gaps
+from ..historical_v2.query_coverage import coverage_document
 from ..historical_v2.window_results import summary_bytes
 
 RID = re.compile(r'[0-9a-f]{32}\Z')
 CAMERA = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z')
 
 class Denied(Exception):
-    def __init__(self,status):self.status=status
+    def __init__(self,status,running=None):self.status=status;self.running=running
+
+# One progress poll is 1s. Keep the finished slot long enough for that read,
+# then drop it without a browser /release. This is not a job scheduler.
+CLEANUP_GRACE = 3
+
+
+def recording_zone(name):
+    """Explicit IANA zone. Not the caller machine's local zone."""
+    if type(name) is not str or not re.fullmatch(r'[A-Za-z0-9_+-][A-Za-z0-9._+\-/]{0,63}', name):
+        raise ValueError('zone')
+    if '..' in name or name in ('localtime', 'posixrules'):
+        raise ValueError('zone')
+    try:
+        return ZoneInfo(name)
+    except ZoneInfoNotFoundError:
+        raise ValueError('zone')
+
+
+def catalog_recording_dates(path, camera, month, zone_name):
+    """Calendar dates in one explicit zone that overlap Catalog recordings.
+
+    Dates come from Catalog Unix timestamps. A returned date means retained
+    Catalog coverage exists. It is not a signing result and does not mean the
+    day is complete.
+    """
+    if type(camera) is not str or not CAMERA.fullmatch(camera):
+        raise ValueError('camera')
+    if type(month) is not str or not re.fullmatch(r'\d{4}-\d{2}', month):
+        raise ValueError('month')
+    year, mon = int(month[:4]), int(month[5:])
+    if not 1970 <= year <= 2100 or not 1 <= mon <= 12:
+        raise ValueError('month')
+    zone = recording_zone(zone_name)
+    # Pad the SQL window so a daylight-saving offset cannot hide a row. The
+    # zone conversion below decides which dates are actually inside the month.
+    left = datetime(year, mon, 1, tzinfo=timezone.utc).timestamp() - 14 * 3600
+    next_year, next_mon = (year + 1, 1) if mon == 12 else (year, mon + 1)
+    right = datetime(next_year, next_mon, 1, tzinfo=timezone.utc).timestamp() + 14 * 3600
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        db = sqlite3.connect(f'file:/proc/self/fd/{fd}?mode=ro&immutable=1', uri=True, timeout=0)
+        db.execute('PRAGMA query_only=ON')
+        rows = db.execute(
+            'SELECT start_time,end_time FROM recordings WHERE camera=? AND start_time<? AND end_time>? '
+            'ORDER BY start_time,end_time LIMIT 4001',
+            (camera, right, left)).fetchall()
+    finally:
+        os.close(fd)
+    complete = len(rows) <= 4000
+    dates = set()
+
+    def zoned_date(stamp):
+        return datetime.fromtimestamp(float(stamp), timezone.utc).astimezone(zone).date()
+
+    for raw_start, raw_end in rows[:4000]:
+        if type(raw_start) not in (int, float) or type(raw_end) not in (int, float) or not raw_end > raw_start:
+            continue
+        day, final = zoned_date(raw_start), zoned_date(float(raw_end) - 1e-6)
+        for _ in range(40):
+            if day.year == year and day.month == mon:
+                dates.add(day.isoformat())
+            if day >= final:
+                break
+            day += timedelta(days=1)
+    return dict(schema='nanexus-hv2-catalog-days/1', camera=camera, month=month, zone=zone_name,
+                dates=sorted(dates), complete=complete,
+                meaning='catalog_recordings_present')
+
+
+def _month(month):
+    if type(month) is not str or not re.fullmatch(r'\d{4}-\d{2}', month):
+        raise ValueError('month')
+    year, mon = int(month[:4]), int(month[5:])
+    if not 1970 <= year <= 2100 or not 1 <= mon <= 12:
+        raise ValueError('month')
+    return year, mon
+
+
+def session_recording_dates(session, cookie, owner, camera, native, month, zone_name):
+    """Current Frigate recording dates for one camera, read once with the caller's session.
+
+    Frigate groups recordings by start time in the requested zone. A returned
+    date means retained recordings exist now. It is not a signing result and
+    does not mean the day is complete.
+    """
+    year, mon = _month(month)
+    recording_zone(zone_name)
+    if type(native) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', native):
+        raise ValueError('camera')
+    session.authorize(cookie, owner, native, time.monotonic() + 2)
+    raw = session.get(cookie, '/api/recordings/summary?' + urlencode({'cameras': native, 'timezone': zone_name}),
+                      64 << 10, time.monotonic() + 2)
+    def pairs(values):
+        result = {}
+        for key, value in values:
+            if key in result:
+                raise ValueError('duplicate date')
+            result[key] = value
+        return result
+    days = json.loads(raw, object_pairs_hook=pairs,
+                      parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+    if type(days) is not dict:
+        raise ValueError('summary')
+    dates = set()
+    for key, value in days.items():
+        if value is not True or type(key) is not str or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', key):
+            raise ValueError('summary')
+        day = datetime.strptime(key, '%Y-%m-%d').date()
+        if day.year == year and day.month == mon:
+            dates.add(key)
+    return dict(schema='nanexus-hv2-catalog-days/1', camera=camera, month=month, zone=zone_name,
+                dates=sorted(dates), complete=True, meaning='catalog_recordings_present')
 
 
 def finding(entry,row,*,owner=None,camera=None,request_id=None):
@@ -62,6 +180,7 @@ class WindowHTTP:
 
     def _expire(self):
         if self.slot and not self.slot['running'] and self.clock()>=self.slot['expires']:
+            self._disarm(self.slot)
             self._release(self.slot)
 
     def submit(self,cookie,data):
@@ -77,7 +196,7 @@ class WindowHTTP:
         with self.lock:
             self._expire()
             if self.closed:raise Denied(503)
-            if self.slot is not None:raise Denied(409)
+            if self.slot is not None:raise Denied(409,self.slot['running'] is True)
             record=dict(owner=owner,camera=camera,guard=guard,admitted=admitted,id=secrets.token_hex(16),
                         running=True,state='RUNNING',files=[],reason=None,result=None,cancel=threading.Event(),
                         expires=None,thread=None,evidence_available=False,request_start=data['start'],request_end=data['end'],
@@ -102,6 +221,7 @@ class WindowHTTP:
                 if len({item.item_id for item in value})!=len(value):raise ValueError('duplicate plan recording')
                 record['generations']={item.item_id:item.generation for item in value}
                 record['files']=planned
+                record['planned']=True
                 record['catalog_gaps'],record['catalog_gaps_state']=self._catalog_gaps(record,value)
             else:
                 matches=[i for i,f in enumerate(record['files']) if f['recording']==row['recording']]
@@ -143,7 +263,8 @@ class WindowHTTP:
                 if owner!=record['owner'] or admitted!=record['admitted']:raise PrototypeFailure('UNAUTHORIZED')
         result=None;state='EXECUTION_FAILED';reason='Verification stopped after an operational failure.'
         try:
-            result=self.coordinator.run(record['owner'],record['admitted'],start,end,record['id'],permission)
+            result=self.coordinator.run(record['owner'],record['admitted'],start,end,record['id'],permission,
+                                        cookie=cookie if type(self.coordinator.profile) is DirectSessionApiProfile else None)
             last[0]=float('-inf');permission()
             state='COMPLETE' if result['status']=='RESULT' else result['status']
             reason=None if state=='COMPLETE' else result.get('reason','Verification stopped; remaining files were not processed.')
@@ -158,6 +279,30 @@ class WindowHTTP:
                                   evidence_available=result is not None and self.coordinator._record is not None)
                     if result is not None:
                         record['result']={k:result[k] for k in ('status','processed','unprocessed','input','retained_bytes') if k in result}
+                    if not self.closed:
+                        self._arm_cleanup(record)
+
+    def _disarm(self,record):
+        timer=record.get('cleanup')
+        if timer is not None:
+            timer.cancel()
+            record['cleanup']=None
+
+    def _arm_cleanup(self,record):
+        """Release this finished slot after a short read window. A newer slot is left alone."""
+        self._disarm(record)
+        timer=threading.Timer(CLEANUP_GRACE,self._cleanup,args=(record,))
+        timer.daemon=True
+        record['cleanup']=timer
+        timer.start()
+
+    def _cleanup(self,record):
+        with self.lock:
+            if self.closed or self.slot is not record or record['running']:
+                return False
+            self._disarm(record)
+            self._release(record)
+            return True
 
     def _admit(self,cookie,rid):
         if type(rid) is not str or not RID.fullmatch(rid):raise Denied(400)
@@ -167,6 +312,22 @@ class WindowHTTP:
             owner,guard,admitted,refresh=self._grant(cookie,r['camera'],r['guard'])
             if owner!=r['owner'] or admitted!=r['admitted']:raise Denied(403)
             return r,refresh
+
+    def catalog_days(self,cookie,camera,month,zone_name):
+        if type(camera) is not str or not CAMERA.fullmatch(camera):raise Denied(400)
+        owner,guard,admitted,refresh=self._grant(cookie,camera)
+        if owner is None or admitted is None:raise Denied(403)
+        profile=self.coordinator.profile
+        try:
+            if type(profile) is DirectSessionApiProfile:
+                value=session_recording_dates(profile.session,cookie,owner,camera,admitted.native_key,month,zone_name)
+            else:
+                value=catalog_recording_dates(profile.snapshot.path,camera,month,zone_name)
+        except ProviderFailure as exc:
+            raise Denied(403 if exc.reason=='access-denied-or-revoked' else 503)
+        except ValueError:raise Denied(400)
+        except Exception:raise Denied(503)
+        return value,refresh
 
     def observe(self,cookie,rid,result=False):
         r,refresh=self._admit(cookie,rid)
@@ -178,7 +339,27 @@ class WindowHTTP:
                        state=r['state'],reason=r['reason'],files=r['files'],summary=r['result'],
                        summary_only=True,evidence_available=available,origin='HOLD',continuity='UNKNOWN',coverage='UNKNOWN',
                        catalog_gaps=r['catalog_gaps'],catalog_gaps_state=r['catalog_gaps_state'])
+            coverage=self._query_coverage(r)
+            if coverage is not None:value['query_coverage']=coverage
             return json.loads(summary_bytes(value)),refresh
+
+    def _query_coverage(self,record):
+        """Live-session timeline partition of the user query. Not signing coverage.
+
+        The established document requires a dataset interval. Session jobs have no
+        corpus manifest, so dataset equals the query and outside is not emitted.
+        """
+        if type(self.coordinator.profile) is not DirectSessionApiProfile:return None
+        if not record.get('planned') or not record['files']:return None
+        spans=[]
+        for item in record['files']:
+            iv=item.get('metadata_interval') or {}
+            start,end=iv.get('start'),iv.get('end')
+            if start is None or end is None:continue
+            finding=item.get('finding') if item.get('state')=='COMPLETED' else 'PENDING'
+            spans.append((start,end,item.get('recording'),finding))
+        return coverage_document(record['request_start'],record['request_end'],
+                                 record['request_start'],record['request_end'],spans,True)
 
     def cancel(self,cookie,rid):
         r,refresh=self._admit(cookie,rid)
@@ -198,9 +379,24 @@ class WindowHTTP:
         self.slot=None
 
     def release(self,cookie,rid):
-        r,refresh=self._admit(cookie,rid)
+        if type(rid) is not str or not RID.fullmatch(rid):raise Denied(400)
         with self.lock:
-            if self.slot is not r:raise Denied(404)
+            current=self.slot
+            stale=current is None or current['id']!=rid
+        if stale:
+            # Already gone, or a newer job owns the slot. Do not touch that job.
+            _profile,refresh=self.access.session(cookie)
+            return dict(request_id=rid,released=True),refresh
+        try:
+            r,refresh=self._admit(cookie,rid)
+        except Denied as e:
+            if e.status!=404:raise
+            return dict(request_id=rid,released=True),None
+        with self.lock:
+            if self.slot is not r:
+                return dict(request_id=rid,released=True),refresh
+            if r['running']:raise Denied(409)
+            self._disarm(r)
             self._release(r)
         r['thread'].join(1)
         return dict(request_id=rid,released=True),refresh
@@ -208,7 +404,9 @@ class WindowHTTP:
     def close(self):
         with self.lock:
             self.closed=True;r=self.slot
-            if r:r['cancel'].set()
+            if r:
+                r['cancel'].set()
+                self._disarm(r)
         self.coordinator.close()
         if r:r['thread'].join(6)
         if r and r['thread'].is_alive():raise RuntimeError('window worker still stopping')
@@ -246,6 +444,12 @@ def handler(accepted_handler):
                         value,refresh=action(cookie,data['request_id']);code=200
                 else:
                     if self.headers.get('Content-Length') not in (None,'0'):raise Denied(400)
+                    if url.path=='/window/status' and 'month' in url.query:
+                        q=parse_qs(url.query,strict_parsing=True,max_num_fields=3)
+                        if set(q)!={'camera','month','zone'} or any(len(v)!=1 for v in q.values()):raise Denied(400)
+                        value,refresh=adapter.catalog_days(cookie,q['camera'][0],q['month'][0],q['zone'][0])
+                        self.reply(200,value,refresh)
+                        return True
                     if url.path not in ('/window/status','/window/progress','/window/result'):raise Denied(404)
                     q=parse_qs(url.query,strict_parsing=True,max_num_fields=1)
                     if set(q)!={'request_id'} or len(q['request_id'])!=1:raise Denied(400)
@@ -254,7 +458,10 @@ def handler(accepted_handler):
             except Exception as e:
                 status=getattr(e,'status',None)
                 if isinstance(e,PrototypeFailure):status={'UNAUTHORIZED':403,'UNAVAILABLE':404,'BUSY':409,'LIMIT':413}.get(e.code,503)
-                self.reply(status if status in (400,401,403,404,409,413,503) else 400,{'error':'window_operation_unavailable'})
+                body={'error':'window_operation_unavailable'}
+                running=getattr(e,'running',None)
+                if status==409 and type(running) is bool:body['running']=running
+                self.reply(status if status in (400,401,403,404,409,413,503) else 400,body)
             return True
         def do_GET(self):
             if not self._window(False):super().do_GET()

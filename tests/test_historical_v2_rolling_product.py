@@ -238,3 +238,18 @@ class ProductCompanionTests(old.Harness):
         self.auth.valid.add('alice');self.ops.slot['expires']=0
         with self.assertRaises(Denied):self.ops.observe(self.cookie(),rid)
         self.assertIsNone(self.coordinator._record)
+    def test_absent_neighbor_keeps_catalog_overlap_and_reads_present_originals(self):
+        (self.media/'r0.mp4').unlink()
+        result,_=self.ops.submit(self.cookie(),dict(camera='front',start='1',end='29'))
+        self.ops.slot['thread'].join(3)
+        self.assertFalse(self.ops.slot['running'])
+        value,_=self.ops.observe(self.cookie(),result['request_id'],True)
+        self.assertEqual([f['recording'] for f in value['files']],['r0','r1','r2'])
+        self.assertEqual([f['state'] for f in value['files']],['PENDING','COMPLETED','COMPLETED'])
+        self.assertIsNone(value['files'][0]['finding'])
+        self.assertEqual(value['files'][1]['state'],'COMPLETED')
+        self.assertEqual(value['state'],'SOURCE_UNAVAILABLE')
+        self.assertIn('no signing finding',value['reason'])
+        self.assertNotIn('No recordings were selected',value['reason'])
+        self.assertEqual(self.native_calls,1)
+        self.assertEqual(value['catalog_gaps'],[])

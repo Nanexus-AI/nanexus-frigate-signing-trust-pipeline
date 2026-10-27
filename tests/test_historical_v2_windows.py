@@ -71,6 +71,8 @@ class WindowTests(old.Harness):
         expected=['r'+str(i).zfill(3) for i in range(n)]
         self.assertEqual(self.visited,expected)
         self.assertEqual(result['status'],'RESULT' if n else 'NO_MATCHING_RECORDING')
+        if not n:
+            self.assertEqual(result['reason'],'No recordings were selected in this bounded catalog observation.')
         self.assertEqual([row['recording'] for row in result['files']],expected)
         self.assertEqual([row['members'] for row in result.get('windows',[])],[[expected[i] for i in indices] for indices in w.windows(n)])
         if n:
