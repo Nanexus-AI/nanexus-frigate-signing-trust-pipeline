@@ -320,9 +320,12 @@ def compile_oms(pipeline, objects):
     env = os.environ.copy()
     env['CC'] = '/usr/bin/gcc'
     env['CXX'] = '/usr/bin/g++'
+    # debugoptimized stores the absolute build directory in DWARF and makes the
+    # library hash follow that path. Keep -O2 and omit -g.
     run([
         meson, 'setup', str(objects), str(source),
-        '-Dsigningplugin=unthreaded', '-Dwerror=false', '--buildtype=debugoptimized',
+        '-Dsigningplugin=unthreaded', '-Dwerror=false',
+        '-Doptimization=2', '-Ddebug=false',
     ], pipeline, env)
     run([meson, 'compile', '-C', str(objects)], pipeline, env)
     version = run([meson, '--version'], pipeline, env).stdout.strip()
@@ -380,7 +383,8 @@ def manifest(identity, worker, library, worker_info, library_info, meson_version
             'version': meson_version,
             'signingplugin': 'unthreaded',
             'werror': False,
-            'buildtype': 'debugoptimized',
+            'optimization': '2',
+            'debug': False,
         },
         'worker_sha256': worker_sha,
         'oms_sha256': library_sha,

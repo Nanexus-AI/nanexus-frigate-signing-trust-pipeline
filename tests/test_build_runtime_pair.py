@@ -190,6 +190,26 @@ class PairBuildTests(unittest.TestCase):
         self.assertEqual(manifest['installation'], pair.INSTALLATION)
         self.assertEqual(manifest['modes']['bin/worker_child'], '0755')
         self.assertEqual(manifest['modes']['lib/' + pair.LIBRARY_NAME], '0644')
+        self.assertEqual(manifest['meson']['optimization'], '2')
+        self.assertFalse(manifest['meson']['debug'])
+        self.assertNotIn('.debug_', subprocess.check_output(
+            ['readelf', '-S', str(library)], text=True))
+
+    def test_two_output_directories_produce_the_same_binaries(self):
+        other_parent = tempfile.TemporaryDirectory()
+        self.addCleanup(other_parent.cleanup)
+        other = Path(other_parent.name) / 'runtime'
+        record = pair.build(ROOT, other)
+        worker, library, _link = pair.require_layout(other)
+        self.assertEqual(record['worker_sha256'], self.record['worker_sha256'])
+        self.assertEqual(record['oms_sha256'], self.record['oms_sha256'])
+        self.assertEqual((other / 'bin' / 'worker_child').read_bytes(),
+                         (self.output / 'bin' / 'worker_child').read_bytes())
+        self.assertEqual(library.read_bytes(),
+                         (self.output / 'lib' / pair.LIBRARY_NAME).read_bytes())
+        self.assertEqual(pair.sha256_file(worker), record['worker_sha256'])
+        self.assertNotEqual(record['worker_sha256'], ACCEPTED_WORKER_SHA)
+        self.assertNotEqual(record['oms_sha256'], ACCEPTED_OMS)
 
     def test_second_build_does_not_overwrite(self):
         before = (self.output / 'bin' / 'worker_child').read_bytes()
