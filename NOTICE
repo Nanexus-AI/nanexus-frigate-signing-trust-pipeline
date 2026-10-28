@@ -1,0 +1,58 @@
+Nanexus Frigate Signing Trust Pipeline
+Copyright 2026 Nanexus-AI contributors
+
+The Nanexus companion/product code is licensed under the Apache License,
+Version 2.0. See LICENSE.
+
+Frigate attribution
+The pinned Recordings schema used in tests is assembled from Frigate upstream
+migrations. Frigate upstream software is MIT licensed:
+Copyright (c) 2026 Frigate, Inc. (Frigate™)
+
+The MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Historical Worker source
+Eight C++ files used to build the Historical Worker were copied unchanged from
+nanexus-video-trust-toolkit commit 678d8135f738a813831898388266842ede90c5e7.
+They are Copyright 2026 Nanexus-AI contributors and licensed under the Apache
+License, Version 2.0. See LICENSE. Their original paths were:
+
+include/videotrust/historical_observation.hpp
+include/videotrust/session.hpp
+include/videotrust/error.hpp
+include/videotrust/result.hpp
+src/verification/historical_observation.cpp
+src/verification/historical_reconciliation.hpp
+src/upstream/session.cpp
+src/core/error.cpp
+
+No other Toolkit source is included. The ONVIF Media Signing Framework remains
+an external dependency, MIT licensed, Copyright (c) 2025 ONVIF. Its headers and
+shared library are not vendored in this repository.
+
+Separate distribution boundaries
+The separately distributed Nanexus additions to the pinned Frigate integration
+patch are MIT licensed, not covered by this product's Apache-2.0 declaration.
+Applicable upstream Frigate notices remain in force; see the patch distribution's
+LICENSE and LICENSE.nanexus. This repository does not bundle the Toolkit
+repository beyond the eight Historical Worker files above, FFmpeg, or a complete
+Frigate image. Their respective licenses and third-party notices remain separate;
+this notice does not license or authorize redistribution of those excluded works.

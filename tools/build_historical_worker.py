@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Build the Historical Native Worker into a caller-selected directory.
+"""Build the Historical Native Worker from Pipeline-owned source.
 
-The Toolkit checkout and the output directory are inputs. This entry does not
-install the binary, change source, or select a runtime location.
+OMS headers and the pinned OMS shared library are explicit inputs. This entry
+does not install the binary, change source, or select a runtime location.
 """
 import argparse
 import hashlib
@@ -12,13 +12,42 @@ import sys
 from pathlib import Path
 
 PIPELINE_ANCESTOR = 'd6f41afc855690187e01f27e0bb87b77380176e6'
-TOOLKIT_HEAD = '678d8135f738a813831898388266842ede90c5e7'
-ONVIF_COMMIT = 'cf7785ab993c18d921094e8e505c2c34a1350f28'
 COMPILER_RELEASE = '13.3.0-6ubuntu2~24.04.1'
 OMS_SHA256 = 'e157fd03c14ba2ae63ce19800cb00d994bc4500a80d84f88492d5537cda76c98'
+ONVIF_COMMIT = 'cf7785ab993c18d921094e8e505c2c34a1350f28'
+ONVIF_TAG = 'r25.12.6'
 REFERENCE_REBUILD_SHA256 = 'd12125f5923f82e6b17d923791b0069ff30820c1381fd405b47f78c0f18e3f47'
 ACCEPTED_WORKER_SHA256 = 'cfe8d86efebd749e82e308d86f88316795fcc6828bb205da3d8f2d151e8d4d22'
+TOOLKIT_ORIGIN = '678d8135f738a813831898388266842ede90c5e7'
+INCLUDE = 'src/nanexus_trust/historical_v2/videotrust/include'
 
+# Byte-identical copies. The first path is the Toolkit path at TOOLKIT_ORIGIN.
+MIGRATED = {
+    'include/videotrust/historical_observation.hpp': (
+        'src/nanexus_trust/historical_v2/videotrust/include/videotrust/historical_observation.hpp',
+        '0671952c0e9ad35932f9b98c8005e63e4dfd14295c1ae024ec18f5d71fbfb389'),
+    'include/videotrust/session.hpp': (
+        'src/nanexus_trust/historical_v2/videotrust/include/videotrust/session.hpp',
+        'bee821aec9e3e07347b49fb19ecd910deb42aac37e2bbee2940b771e8896e8bf'),
+    'include/videotrust/error.hpp': (
+        'src/nanexus_trust/historical_v2/videotrust/include/videotrust/error.hpp',
+        'bcb2db1174676ce598bc0655650642930b8c866d5ae8261fe599fb5db1ac065c'),
+    'include/videotrust/result.hpp': (
+        'src/nanexus_trust/historical_v2/videotrust/include/videotrust/result.hpp',
+        'e114e6b275c6dbeff335f23fd4b53babe14cb59ce5de69f8085ac880edd06703'),
+    'src/verification/historical_observation.cpp': (
+        'src/nanexus_trust/historical_v2/videotrust/historical_observation.cpp',
+        'afba316c9d7668ee5c3b0758cfaeef5f89fcb8bbf7b86030ef7c8f1f0cee4db1'),
+    'src/verification/historical_reconciliation.hpp': (
+        'src/nanexus_trust/historical_v2/videotrust/historical_reconciliation.hpp',
+        '9f0a0677e87e31500fa3db5924697df46a06b965fbfca87e5f70718c5aea6820'),
+    'src/upstream/session.cpp': (
+        'src/nanexus_trust/historical_v2/videotrust/session.cpp',
+        '2c9032284d3c4f074f3ec11e5fe011a6adb8dc3d51e6dd10c8b3cfdf313dc45c'),
+    'src/core/error.cpp': (
+        'src/nanexus_trust/historical_v2/videotrust/error.cpp',
+        'b0732f07a76e7728e8ebd33a881d096a23be36217acf0c93ca432c9fb1c52f25'),
+}
 PIPELINE_SOURCES = {
     'src/nanexus_trust/historical_v2/product_worker_entry.cpp':
         'd7f3b89859fd224a2acb1552b8e877983a050b329fc22d0f871e37f044f3e681',
@@ -27,33 +56,16 @@ PIPELINE_SOURCES = {
     'src/nanexus_trust/historical_v2/worker_updates.hpp':
         'b2284c075fd6d05ef52d918d69297c6c436d69623234c6be074bc99a354627e1',
 }
-TOOLKIT_SOURCES = {
-    'include/videotrust/historical_observation.hpp':
-        '0671952c0e9ad35932f9b98c8005e63e4dfd14295c1ae024ec18f5d71fbfb389',
-    'src/verification/historical_observation.cpp':
-        'afba316c9d7668ee5c3b0758cfaeef5f89fcb8bbf7b86030ef7c8f1f0cee4db1',
-    'src/verification/historical_reconciliation.hpp':
-        '9f0a0677e87e31500fa3db5924697df46a06b965fbfca87e5f70718c5aea6820',
-    'include/videotrust/session.hpp':
-        'bee821aec9e3e07347b49fb19ecd910deb42aac37e2bbee2940b771e8896e8bf',
-    'include/videotrust/error.hpp':
-        'bcb2db1174676ce598bc0655650642930b8c866d5ae8261fe599fb5db1ac065c',
-    'include/videotrust/result.hpp':
-        'e114e6b275c6dbeff335f23fd4b53babe14cb59ce5de69f8085ac880edd06703',
-    'src/upstream/session.cpp':
-        '2c9032284d3c4f074f3ec11e5fe011a6adb8dc3d51e6dd10c8b3cfdf313dc45c',
-    'src/core/error.cpp':
-        'b0732f07a76e7728e8ebd33a881d096a23be36217acf0c93ca432c9fb1c52f25',
+PIPELINE_SOURCES.update({path: digest for path, digest in MIGRATED.values()})
+OMS_HEADERS = {
+    'onvif_media_signing_common.h': '896b08be4531f8851bb2d93db5c15d24520331daa337de62c199b5f237c2fdf2',
+    'onvif_media_signing_signer.h': 'a07464998421c6d93d1f7ab0a1ee41fd6e1749097db6d19313d274dfcdbc4056',
+    'onvif_media_signing_validator.h': '5dde31fcf47bf5fb95551f8379089bac0a2e7764ea90e7371d8c92ec6eb586c4',
 }
-ONVIF_HEADERS = (
-    'lib/src/includes/onvif_media_signing_common.h',
-    'lib/src/includes/onvif_media_signing_signer.h',
-    'lib/src/includes/onvif_media_signing_validator.h',
-)
 ENTRY = 'src/nanexus_trust/historical_v2/product_worker_entry.cpp'
-OBSERVATION = 'src/verification/historical_observation.cpp'
-SESSION = 'src/upstream/session.cpp'
-ERROR = 'src/core/error.cpp'
+OBSERVATION = 'src/nanexus_trust/historical_v2/videotrust/historical_observation.cpp'
+SESSION = 'src/nanexus_trust/historical_v2/videotrust/session.cpp'
+ERROR = 'src/nanexus_trust/historical_v2/videotrust/error.cpp'
 
 
 class BuildFailure(Exception):
@@ -119,42 +131,34 @@ def verify_tree(repo, relative, digest, label):
     return path
 
 
-def verify_onvif_header(oms, relative):
-    path = Path(oms) / relative
+def verify_oms_header(headers, name, digest):
+    path = Path(headers) / name
     if not path.is_file():
-        raise BuildFailure('missing', f'ONVIF header missing: {path}')
-    blob = subprocess.check_output(['git', '-C', str(oms), 'show', f'HEAD:{relative}'])
-    if path.read_bytes() != blob:
-        raise BuildFailure('hash', f'ONVIF header differs from {ONVIF_COMMIT}: {relative}')
+        raise BuildFailure('missing', f'OMS header missing: {name}')
+    actual = sha256_file(path)
+    if actual != digest:
+        raise BuildFailure('hash', f'OMS header sha256 {actual} != {digest}')
+    return path
 
 
-def verify(pipeline, toolkit, output):
+def verify(pipeline, oms_headers, oms_library, output):
     pipeline = Path(pipeline).resolve()
-    toolkit = Path(toolkit).resolve()
-    if not pipeline.is_dir() or not toolkit.is_dir():
-        raise BuildFailure('missing', 'pipeline and toolkit directories are required')
+    headers = Path(oms_headers)
+    library = Path(oms_library)
+    if not pipeline.is_dir() or not headers.is_dir():
+        raise BuildFailure('missing', 'pipeline and OMS header directories are required')
     resolved, binary, record = outputs(output)
-    for banned in (pipeline / 'src', pipeline / '.git', toolkit / '.git', toolkit / '.oms-prefix'):
+    for banned in (pipeline / 'src', pipeline / '.git'):
         if banned.exists() and inside(banned, resolved):
             raise BuildFailure('output', f'build directory is inside {banned}')
     head = git_output(pipeline, 'rev-parse', 'HEAD')
     if subprocess.call(['git', '-C', str(pipeline), 'merge-base', '--is-ancestor', PIPELINE_ANCESTOR, 'HEAD']) != 0:
         raise BuildFailure('version', f'pipeline HEAD {head} is not {PIPELINE_ANCESTOR} or a descendant')
-    toolkit_head = git_output(toolkit, 'rev-parse', 'HEAD')
-    if toolkit_head != TOOLKIT_HEAD:
-        raise BuildFailure('version', f'toolkit HEAD {toolkit_head} != {TOOLKIT_HEAD}')
-    oms = toolkit / 'third_party/media-signing-framework'
-    onvif = git_output(oms, 'rev-parse', 'HEAD')
-    if onvif != ONVIF_COMMIT:
-        raise BuildFailure('version', f'ONVIF HEAD {onvif} != {ONVIF_COMMIT}')
     compiler = compiler_text()
     if COMPILER_RELEASE not in compiler:
         raise BuildFailure('version', f'g++ is not {COMPILER_RELEASE}')
     sources = {name: verify_tree(pipeline, name, digest, name) for name, digest in PIPELINE_SOURCES.items()}
-    sources.update({name: verify_tree(toolkit, name, digest, name) for name, digest in TOOLKIT_SOURCES.items()})
-    for header in ONVIF_HEADERS:
-        verify_onvif_header(oms, header)
-    library = toolkit / '.oms-prefix/lib/x86_64-linux-gnu/libmedia-signing-framework.so'
+    checked_headers = {name: verify_oms_header(headers, name, digest) for name, digest in OMS_HEADERS.items()}
     if not library.is_file():
         raise BuildFailure('missing', f'OMS library missing: {library}')
     library_hash = sha256_file(library)
@@ -163,26 +167,26 @@ def verify(pipeline, toolkit, output):
     libdir = library.resolve().parent
     command = [
         'g++', '-std=c++20', '-O1', '-Wno-deprecated-declarations',
-        '-I', str(toolkit / 'include'),
-        '-I', str(oms / 'lib/src/includes'),
+        '-I', str((pipeline / INCLUDE).resolve()),
+        '-I', str(headers.resolve()),
         str(sources[ENTRY]),
         str(sources[OBSERVATION]),
         str(sources[SESSION]),
         str(sources[ERROR]),
-        str(library),
+        str(library.resolve()),
         '-lcrypto', '-Wl,-z,now', f'-Wl,-rpath,{libdir}',
         '-o', str(binary),
     ]
     return {
         'pipeline_head': head,
-        'toolkit_head': toolkit_head,
-        'onvif_commit': onvif,
         'compiler': compiler.splitlines()[0],
         'command': command,
         'output': resolved,
         'binary': binary,
         'record': record,
         'library_sha256': library_hash,
+        'headers': {name: str(path.resolve()) for name, path in checked_headers.items()},
+        'sources': {name: sha256_file(path) for name, path in sources.items()},
     }
 
 
@@ -202,8 +206,8 @@ def dynamic_requirements(binary):
     return needed, runpath
 
 
-def build(pipeline, toolkit, output):
-    plan = verify(pipeline, toolkit, output)
+def build(pipeline, oms_headers, oms_library, output):
+    plan = verify(pipeline, oms_headers, oms_library, output)
     plan['output'].mkdir(exist_ok=True)
     result = subprocess.run(plan['command'], cwd=pipeline, text=True, capture_output=True, timeout=120)
     if result.returncode != 0:
@@ -216,11 +220,20 @@ def build(pipeline, toolkit, output):
     record = {
         'schema': 'nanexus-hv2-worker-build/1',
         'pipeline_head': plan['pipeline_head'],
-        'toolkit_head': plan['toolkit_head'],
-        'onvif_commit': plan['onvif_commit'],
-        'onvif_tag': 'r25.12.6',
+        'toolkit_origin': {
+            'repository': 'nanexus-video-trust-toolkit',
+            'commit': TOOLKIT_ORIGIN,
+            'license': 'Apache-2.0',
+            'copyright': 'Copyright 2026 Nanexus-AI contributors',
+            'files': {origin: {'pipeline': pipeline_path, 'sha256': digest}
+                      for origin, (pipeline_path, digest) in MIGRATED.items()},
+        },
+        'onvif_commit': ONVIF_COMMIT,
+        'onvif_tag': ONVIF_TAG,
         'compiler': plan['compiler'],
         'compiler_release': COMPILER_RELEASE,
+        'sources': plan['sources'],
+        'oms_headers': OMS_HEADERS,
         'oms_sha256': plan['library_sha256'],
         'command': plan['command'],
         'binary': plan['binary'].name,
@@ -241,11 +254,12 @@ def build(pipeline, toolkit, output):
 def main(argv):
     parser = argparse.ArgumentParser(description='Build the Historical Native Worker into an explicit directory.')
     parser.add_argument('--pipeline', type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument('--toolkit', type=Path, required=True)
+    parser.add_argument('--oms-headers', type=Path, required=True)
+    parser.add_argument('--oms-library', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        record = build(args.pipeline, args.toolkit, args.output)
+        record = build(args.pipeline, args.oms_headers, args.oms_library, args.output)
     except BuildFailure as exc:
         print(f'{exc.code}: {exc}', file=sys.stderr)
         return 2

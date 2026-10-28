@@ -1,125 +1,148 @@
-"""Argument and pin checks for the Historical Worker build entry. Does not compile."""
-import importlib.util
-import os
-import subprocess
+import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-TOOL = ROOT / 'tools/build_historical_worker.py'
+sys.path.insert(0, str(Path(__file__).parents[1] / 'tools'))
+import build_historical_worker as entry
+
+ROOT = Path(__file__).parents[1]
+SCRIPT = ROOT / 'tools' / 'build_historical_worker.py'
+ACCEPTED = 'cfe8d86efebd749e82e308d86f88316795fcc6828bb205da3d8f2d151e8d4d22'
 SIBLING = ROOT.parent / 'nanexus-video-trust-toolkit'
-
-
-def load():
-    spec = importlib.util.spec_from_file_location('build_historical_worker', TOOL)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+HEADER_SOURCE = SIBLING / 'third_party' / 'media-signing-framework' / 'lib' / 'src' / 'includes'
+LIBRARY_SOURCE = SIBLING / '.oms-prefix' / 'lib' / 'x86_64-linux-gnu' / 'libmedia-signing-framework.so'
 
 
 class BuildEntryTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.mod = load()
-
-    def test_source_file_has_no_developer_path(self):
-        text = TOOL.read_text()
+    def test_source_has_no_developer_path_and_keeps_the_accepted_pin(self):
+        text = SCRIPT.read_text()
         self.assertNotIn('/home/', text)
         self.assertNotIn('.local/', text)
         self.assertNotIn('192.168.', text)
+        self.assertNotIn('--toolkit', text)
+        self.assertIn(ACCEPTED, text)
+        self.assertIn("'-Wl,-z,now'", text)
+        self.assertNotIn('$ORIGIN', text)
 
-    def test_missing_toolkit_is_rejected(self):
-        with tempfile.TemporaryDirectory() as temp:
-            output = Path(temp) / 'out'
-            with self.assertRaises(self.mod.BuildFailure) as caught:
-                self.mod.verify(ROOT, Path(temp) / 'absent-toolkit', output)
-        self.assertEqual(caught.exception.code, 'missing')
+    def test_missing_oms_inputs_are_rejected(self):
+        with tempfile.TemporaryDirectory() as raw:
+            output = Path(raw) / 'out'
+            with self.assertRaises(entry.BuildFailure) as caught:
+                entry.verify(ROOT, Path(raw) / 'absent-headers', Path(raw) / 'absent.so', output)
+            self.assertEqual(caught.exception.code, 'missing')
 
-    def test_toolkit_commit_mismatch_is_rejected(self):
-        with tempfile.TemporaryDirectory() as temp:
-            repo = Path(temp) / 'toolkit'
-            repo.mkdir()
-            env = os.environ | {
-                'GIT_AUTHOR_NAME': 'Build Test',
-                'GIT_AUTHOR_EMAIL': 'build-test@example.com',
-                'GIT_COMMITTER_NAME': 'Build Test',
-                'GIT_COMMITTER_EMAIL': 'build-test@example.com',
-            }
-            subprocess.run(['git', 'init'], cwd=repo, check=True, capture_output=True, env=env)
-            (repo / 'README').write_text('not the pinned toolkit\n')
-            subprocess.run(['git', 'add', 'README'], cwd=repo, check=True, capture_output=True, env=env)
-            subprocess.run(['git', 'commit', '-m', 'unrelated'], cwd=repo, check=True, capture_output=True, env=env)
-            with self.assertRaises(self.mod.BuildFailure) as caught:
-                self.mod.verify(ROOT, repo, Path(temp) / 'out')
+    def test_oms_header_and_library_hashes_are_checked(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            headers = root / 'headers'
+            headers.mkdir()
+            for name in entry.OMS_HEADERS:
+                (headers / name).write_bytes(b'not-the-pinned-header')
+            library = root / 'library.so'
+            library.write_bytes(b'not-the-pinned-library')
+            with self.assertRaises(entry.BuildFailure) as header:
+                entry.verify(ROOT, headers, library, root / 'out')
+            self.assertEqual(header.exception.code, 'hash')
+            if not self._inputs_present():
+                self.skipTest('pinned OMS inputs are not available on this machine')
+            for name in entry.OMS_HEADERS:
+                shutil.copyfile(HEADER_SOURCE / name, headers / name)
+            with self.assertRaises(entry.BuildFailure) as library_error:
+                entry.verify(ROOT, headers, library, root / 'out')
+            self.assertEqual(library_error.exception.code, 'hash')
+
+    def test_compiler_identity_is_pinned(self):
+        original = entry.compiler_text
+        entry.compiler_text = lambda: 'g++ (example) 99.0.0\n'
+        try:
+            with tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                headers = root / 'headers'
+                headers.mkdir()
+                with self.assertRaises(entry.BuildFailure) as caught:
+                    entry.verify(ROOT, headers, root / 'library.so', root / 'out')
+        finally:
+            entry.compiler_text = original
         self.assertEqual(caught.exception.code, 'version')
 
-    def test_compiler_mismatch_is_rejected(self):
-        if not (SIBLING / '.git').is_dir():
-            self.skipTest('sibling toolkit checkout is not present')
-        original = self.mod.compiler_text
-        self.mod.compiler_text = lambda: 'g++ (example) 99.0.0\n'
+    def test_pipeline_source_hash_is_checked(self):
+        original = entry.PIPELINE_SOURCES[entry.ENTRY]
+        entry.PIPELINE_SOURCES[entry.ENTRY] = '0' * 64
         try:
-            with tempfile.TemporaryDirectory() as temp:
-                with self.assertRaises(self.mod.BuildFailure) as caught:
-                    self.mod.verify(ROOT, SIBLING, Path(temp) / 'out')
+            with tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                headers = root / 'headers'
+                headers.mkdir()
+                with self.assertRaises(entry.BuildFailure) as caught:
+                    entry.verify(ROOT, headers, root / 'library.so', root / 'out')
         finally:
-            self.mod.compiler_text = original
-        self.assertEqual(caught.exception.code, 'version')
-
-    def test_source_hash_mismatch_is_rejected(self):
-        if not (SIBLING / '.git').is_dir():
-            self.skipTest('sibling toolkit checkout is not present')
-        original = dict(self.mod.PIPELINE_SOURCES)
-        self.mod.PIPELINE_SOURCES = dict(original)
-        self.mod.PIPELINE_SOURCES[self.mod.ENTRY] = '0' * 64
-        try:
-            with tempfile.TemporaryDirectory() as temp:
-                with self.assertRaises(self.mod.BuildFailure) as caught:
-                    self.mod.verify(ROOT, SIBLING, Path(temp) / 'out')
-        finally:
-            self.mod.PIPELINE_SOURCES = original
+            entry.PIPELINE_SOURCES[entry.ENTRY] = original
         self.assertEqual(caught.exception.code, 'hash')
 
-    def test_command_selects_pinned_sources_inside_output(self):
-        if not (SIBLING / '.git').is_dir():
-            self.skipTest('sibling toolkit checkout is not present')
-        with tempfile.TemporaryDirectory() as temp:
-            output = Path(temp) / 'out'
-            plan = self.mod.verify(ROOT, SIBLING, output)
-        command = plan['command']
-        joined = '\n'.join(command)
-        self.assertIn(str((ROOT / self.mod.ENTRY).resolve()), command)
-        self.assertIn(str((SIBLING / self.mod.OBSERVATION).resolve()), command)
-        self.assertNotIn('continuity_child.cpp', joined)
-        self.assertNotIn('hv2-cont09', joined)
-        self.assertEqual(command[:4], ['g++', '-std=c++20', '-O1', '-Wno-deprecated-declarations'])
-        self.assertIn('-lcrypto', command)
-        self.assertIn('-Wl,-z,now', command)
-        binary = Path(command[command.index('-o') + 1])
-        self.assertTrue(self.mod.inside(output, binary))
-        self.assertEqual(binary.name, 'worker_child')
-        self.assertTrue(self.mod.inside(plan['output'], plan['record']))
+    def test_command_uses_pipeline_source_and_absolute_runpath(self):
+        if not self._inputs_present():
+            self.skipTest('pinned OMS inputs are not available on this machine')
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            headers, library = self._copy_inputs(root)
+            output = root / 'out'
+            plan = entry.verify(ROOT, headers, library, output)
+            command = plan['command']
+            self.assertIn(str((ROOT / entry.ENTRY).resolve()), command)
+            self.assertIn(str((ROOT / entry.OBSERVATION).resolve()), command)
+            self.assertIn(str((ROOT / entry.INCLUDE).resolve()), command)
+            self.assertIn(str(headers.resolve()), command)
+            self.assertIn(str(library.resolve()), command)
+            self.assertIn('-lcrypto', command)
+            self.assertIn('-Wl,-z,now', command)
+            self.assertIn(f'-Wl,-rpath,{library.resolve().parent}', command)
+            joined = '\n'.join(command)
+            self.assertNotIn('nanexus-video-trust-toolkit', joined)
+            self.assertNotIn('continuity_child.cpp', joined)
+            self.assertNotIn('hv2-cont09', joined)
+            self.assertEqual(command[0:4], ['g++', '-std=c++20', '-O1', '-Wno-deprecated-declarations'])
+            self.assertEqual(command[-1], str(output.resolve() / 'worker_child'))
 
-    def test_refuses_writes_outside_and_existing_destination(self):
-        if not (SIBLING / '.git').is_dir():
-            self.skipTest('sibling toolkit checkout is not present')
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
+    def test_output_cannot_escape_or_overwrite(self):
+        if not self._inputs_present():
+            self.skipTest('pinned OMS inputs are not available on this machine')
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            headers, library = self._copy_inputs(root)
             outside = root / 'outside'
             outside.mkdir()
             output = root / 'out'
             output.mkdir()
             escaped = outside / 'worker_child'
-            link = output / 'worker_child'
-            link.symlink_to(escaped)
-            with self.assertRaises(self.mod.BuildFailure) as caught:
-                self.mod.verify(ROOT, SIBLING, output)
+            (output / 'worker_child').symlink_to(escaped)
+            with self.assertRaises(entry.BuildFailure) as caught:
+                entry.verify(ROOT, headers, library, output)
             self.assertEqual(caught.exception.code, 'output')
             self.assertFalse(escaped.exists())
-        with self.assertRaises(self.mod.BuildFailure) as caught:
-            self.mod.verify(ROOT, SIBLING, ROOT / 'src' / 'worker-out')
-        self.assertEqual(caught.exception.code, 'output')
+            with self.assertRaises(entry.BuildFailure) as source_dir:
+                entry.verify(ROOT, headers, library, ROOT / 'src' / 'worker-build')
+            self.assertEqual(source_dir.exception.code, 'output')
+
+    def _inputs_present(self):
+        return HEADER_SOURCE.is_dir() and LIBRARY_SOURCE.is_file()
+
+    def _copy_inputs(self, root):
+        headers = root / 'headers'
+        headers.mkdir()
+        for name in entry.OMS_HEADERS:
+            target = headers / name
+            target.write_bytes((HEADER_SOURCE / name).read_bytes())
+        library_dir = root / 'lib'
+        library_dir.mkdir()
+        real = LIBRARY_SOURCE.resolve()
+        copied = library_dir / real.name
+        copied.write_bytes(real.read_bytes())
+        link = library_dir / 'libmedia-signing-framework.so'
+        if link != copied:
+            link.symlink_to(copied.name)
+        return headers, link
 
 
 if __name__ == '__main__':
