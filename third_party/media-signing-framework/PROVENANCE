@@ -1,0 +1,79 @@
+Nanexus provenance record
+
+This file records the vendored snapshot. It is not an ONVIF license
+and it does not change the MIT terms in LICENSE or in the source headers.
+It does not grant ONVIF certification, endorsement, or trademark permission.
+
+Upstream
+  Repository: https://github.com/onvif/media-signing-framework
+  Tag: r25.12.6
+  Commit: cf7785ab993c18d921094e8e505c2c34a1350f28
+
+License
+  Copyright (c) 2025 ONVIF. All rights reserved.
+  The MIT license text is LICENSE, SHA-256
+  e98749974d7173d5d821a2e305791ab38d9885e28927d8b5b5b9403285a2adec.
+  Copies and substantial portions must keep that copyright notice and
+  the permission notice, including the warranty disclaimer.
+  This code remains MIT-licensed ONVIF code. It is not relicensed
+  under the Pipeline Apache-2.0 LICENSE.
+
+TLV modification
+  File: lib/src/oms_tlv.c
+  Upstream SHA-256: 2d457f30c532e7105d9a93d802efb66c01dacd2a3d929eafe843fa83fb5af078
+  Vendored SHA-256: 4569868d43c39ec189e6792b53c671abcdcd4714ea40e9b200257c847884b45d
+  The only change from the upstream file is line 1080 of decode_tlv_header.
+  The condition tlv.tag != tag_from_data becomes
+  tag_from_data == UNDEFINED_TAG || tlv.tag != tag_from_data.
+  A reserved tag value of zero is rejected before decoder dispatch.
+  The project version is unchanged.
+
+Meson adjustment
+  Only the root meson.build differs from the upstream file.
+  Upstream SHA-256: 1742bcb0357fbb5f2166197456aca349ed69c8167d0f8ab4dc481e5344aa523d
+  Vendored SHA-256: 53e13053c969c897964554039643f17077b31a6eb6879c7a77fa095a77c3f402
+  Removed: the libcheck probe; the -DOMS_UNIT_TEST and
+  -DOMS_LIMITED_UNIT_TEST arguments; the check-based remapping of
+  signingplugin=threaded_unless_check_dep; subdir('tests'); and
+  subdir('examples').
+  signer, validator, and build_all_apps stop configuration because
+  those sources are not in this snapshot.
+  Preserved for the unthreaded library: version 25.12.6, SONAME
+  component 25, the same source list, OpenSSL >= 3.0, warning_level=2,
+  the werror default, buildtype debugoptimized, and the unthreaded
+  plugin selection. The other Meson files are unmodified.
+  tests/meson.build is not included.
+
+Not included
+  Examples, tests, certificates, private keys, the threaded plugin,
+  documentation, CI, and the Visual Studio project.
+  oms_helpers.c names test key files but those files are not copied.
+
+Vendored file inventory
+  e98749974d7173d5d821a2e305791ab38d9885e28927d8b5b5b9403285a2adec     1115  LICENSE
+  665b65d306846a53b40bb2dc42ebac6c19c67217aa74526b9fcb16faca8423ce       95  lib/meson.build
+  8e323de2a7a2f6cd66886db978f42af553a5e1def66196152d759d34b45772d7      467  lib/plugins/meson.build
+  509ce2bc3775c7a6a9b9c60b61884a0b13c80507a979a344f27175b3258243f4       57  lib/plugins/unthreaded-signing/meson.build
+  715948fd96272f8c874c699ade253cf210cf24de268cd5b784b54cf8923a79ba     5515  lib/plugins/unthreaded-signing/plugin.c
+  896b08be4531f8851bb2d93db5c15d24520331daa337de62c199b5f237c2fdf2     6182  lib/src/includes/onvif_media_signing_common.h
+  b39a0dc4fc23490cca2caaad4813e3fb9a40d490ba235bde581cbf1648dc6149     3770  lib/src/includes/onvif_media_signing_helpers.h
+  b8367f248ca5743c3a1e3b55b591de9b9c582f8b55fd6f1e7058f9f2c1cb74db     6651  lib/src/includes/onvif_media_signing_plugin.h
+  a07464998421c6d93d1f7ab0a1ee41fd6e1749097db6d19313d274dfcdbc4056    24338  lib/src/includes/onvif_media_signing_signer.h
+  5dde31fcf47bf5fb95551f8379089bac0a2e7764ea90e7371d8c92ec6eb586c4    22257  lib/src/includes/onvif_media_signing_validator.h
+  75f26132c11d02f1589e0418bdf86230c255769b585aec0c23e57a856f86153e      775  lib/src/meson.build
+  e006923981af4c2bd06e203a1345034469403ec0e31f76b1708b83e007da0a86    17747  lib/src/oms_authenticity_report.c
+  a24ec666a9408699c61a158b9fbde70462845f72f72894a0d2b0f891b765b922     2941  lib/src/oms_authenticity_report.h
+  e77251edafdc0daa21ea2eaff1e908fa7396fd18c9c1007136d7768425e572d4    43313  lib/src/oms_common.c
+  890542586f01a55d4609b482d18fb972d02d6eb0db5a237b917761a81ab37e88     6350  lib/src/oms_defines.h
+  dda37819a652a9c9c027f8b6a6c8fdc37d628e30e4fcff15ce471945e61048ea     4995  lib/src/oms_helpers.c
+  5b2807cb99efe2494f3ef93fa7e2214515b5e929ef23e6c06ee1ad7cdda6f821    17397  lib/src/oms_internal.h
+  db2473cf9d48a55ce1274b6db3061dcb2b10d8dd8a7d3b1cb90b69ee67e999c7    19949  lib/src/oms_nalu_list.c
+  5c0fde9ceed16eee481fe97913c09f44803fe6e0f978e761f27b7b21979245fa     9414  lib/src/oms_nalu_list.h
+  d0cf9ef9e9723c4f2552b3ba82780ea218b19c816e396206aca8ec877be050e3    22699  lib/src/oms_openssl.c
+  b0ac536b25acb1f2d3ad9de4d5b8d50993a6c1042e3552f7e649cb625ab4f44a    13353  lib/src/oms_openssl_internal.h
+  46b191c97407ce71e034efa7c7a6819a0f508763c795b5752d97ba12b6f81188    31306  lib/src/oms_signer.c
+  4569868d43c39ec189e6792b53c671abcdcd4714ea40e9b200257c847884b45d    44690  lib/src/oms_tlv.c
+  9b2c08482988ccb66a3fb38aee9c2479d1f9f0123aeaaae01510fb02435d52b1     7435  lib/src/oms_tlv.h
+  78be9ce6f577ac015a7dd09b179f7d144612b37dc2434d93d1ba0d9358240477    55576  lib/src/oms_validator.c
+  53e13053c969c897964554039643f17077b31a6eb6879c7a77fa095a77c3f402     2078  meson.build
+  533c49dd3904ac4e7d2353d77f70722f6dee1c7de9e8d2598b9d4c6eca182fa7      684  meson_options.txt

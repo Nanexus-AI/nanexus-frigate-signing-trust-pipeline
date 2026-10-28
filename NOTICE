@@ -44,15 +44,27 @@ src/verification/historical_reconciliation.hpp
 src/upstream/session.cpp
 src/core/error.cpp
 
-No other Toolkit source is included. The ONVIF Media Signing Framework remains
-an external dependency, MIT licensed, Copyright (c) 2025 ONVIF. Its headers and
-shared library are not vendored in this repository.
+No other Toolkit source is included.
+
+ONVIF Media Signing Framework
+A subset sufficient to build the unthreaded shared library is vendored under
+third_party/media-signing-framework/. That code is Copyright (c) 2025 ONVIF and
+MIT licensed. See third_party/media-signing-framework/LICENSE. It is not
+relicensed as Nanexus Apache-2.0 code. This notice does not grant ONVIF
+certification, endorsement, or trademark permission. The upstream snapshot is
+tag r25.12.6, commit cf7785ab993c18d921094e8e505c2c34a1350f28, from
+https://github.com/onvif/media-signing-framework. The vendored lib/src/oms_tlv.c
+includes one local modification: decode_tlv_header rejects UNDEFINED_TAG before
+decoder dispatch. The root meson.build does not probe libcheck and does not
+build the upstream tests or examples. File hashes and the Meson adjustment are
+recorded in third_party/media-signing-framework/PROVENANCE.
 
 Separate distribution boundaries
 The separately distributed Nanexus additions to the pinned Frigate integration
 patch are MIT licensed, not covered by this product's Apache-2.0 declaration.
 Applicable upstream Frigate notices remain in force; see the patch distribution's
 LICENSE and LICENSE.nanexus. This repository does not bundle the Toolkit
-repository beyond the eight Historical Worker files above, FFmpeg, or a complete
+repository beyond the eight Historical Worker files above, the ONVIF Media
+Signing Framework beyond the subset described above, FFmpeg, or a complete
 Frigate image. Their respective licenses and third-party notices remain separate;
 this notice does not license or authorize redistribution of those excluded works.
