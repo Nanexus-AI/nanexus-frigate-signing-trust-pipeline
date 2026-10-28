@@ -247,12 +247,19 @@ def resolved_oms_library(executable):
     return final
 
 
-def admit_oms_library(executable):
-    """Require the pinned OMS bytes before exec.
+def admit_oms_library(executable, expected_sha256=None):
+    """Require one OMS hash before exec.
 
-    Path and hash checks narrow the launch, but a replacement after this open and
-    before the dynamic loader's open can still change what the process maps.
+    The default hash is the compiled legacy pin. An explicit hash is the pair an
+    operator selected; it is not accepted from the build manifest. Path and hash
+    checks narrow the launch, but a replacement after this open and before the
+    dynamic loader's open can still change what the process maps.
     """
+    if expected_sha256 is None:
+        expected_sha256 = OMS_SHA256
+    else:
+        _oms(type(expected_sha256) is str and len(expected_sha256) == 64
+             and all(c in '0123456789abcdef' for c in expected_sha256))
     final = resolved_oms_library(executable)
     try:
         fd = os.open(final, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
@@ -262,12 +269,12 @@ def admit_oms_library(executable):
         info = os.fstat(fd)
         _oms(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= _LIB_CAP)
         blob = _read_fd(fd, info.st_size)
-        _oms(len(blob) == info.st_size and sha(blob) == OMS_SHA256)
+        _oms(len(blob) == info.st_size and sha(blob) == expected_sha256)
     finally:
         os.close(fd)
 
 
-def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*,timeout=45,_fault='normal',worker_sha256=None):
+def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*,timeout=45,_fault='normal',worker_sha256=None,oms_sha256=None):
     """Trusted caller supplies admitted Plan and safe direct Reader callback.
 
     load(index, check) returns (original receipt, tuple[Nal], catalog metadata)
@@ -294,7 +301,7 @@ def run_context(executable,plan,request,owner,attempt,trust,load,publish,check,*
             from .rolling_product import WORKER_SHA256
             resolved,identity=admit_worker_executable(executable,WORKER_SHA256 if worker_sha256 is None else worker_sha256)
             confirm_worker_executable(resolved,identity)
-            admit_oms_library(resolved)
+            admit_oms_library(resolved, oms_sha256)
             argv0=str(resolved)
         else:
             argv0=str(Path(executable).resolve())

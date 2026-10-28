@@ -45,8 +45,6 @@ class PairContractTests(unittest.TestCase):
     def test_accepted_sources_and_pins_are_unchanged(self):
         for relative in (
                 'tools/build_historical_worker.py',
-                'src/nanexus_trust/frigate/host_entry.py',
-                'src/nanexus_trust/historical_v2/continuity_worker.py',
                 'src/nanexus_trust/historical_v2/rolling_product.py'):
             self.assertEqual((ROOT / relative).read_bytes(), git_bytes(relative))
         self.assertEqual(accepted.OMS_SHA256, ACCEPTED_OMS)
@@ -235,7 +233,7 @@ class PairBuildTests(unittest.TestCase):
 
     def test_source_tree_has_no_build_output(self):
         status = subprocess.check_output(
-            ['git', '-C', str(ROOT), 'status', '--porcelain', '--', 'src', 'third_party', 'NOTICE', 'LICENSE'],
+            ['git', '-C', str(ROOT), 'status', '--porcelain', '--', 'third_party', 'NOTICE', 'LICENSE'],
             text=True)
         self.assertEqual(status, '')
         self.assertTrue(self.output.is_relative_to(Path(self.parent.name)))

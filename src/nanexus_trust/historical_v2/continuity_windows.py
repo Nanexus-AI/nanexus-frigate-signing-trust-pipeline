@@ -92,7 +92,7 @@ class RollingWindowCoordinator(WindowCoordinator):
             check();bundle.add_file(entry,request,provider.snapshot.sha256)
             response['processed']+=1;response['unprocessed']-=1
             if self._observer:self._observer('file',entry,dict(bundle.files[-1]))
-        outcome=run_context(self.profile.worker,plan,request,self._record['owner'],uuid.uuid4().hex,trust,load,publish,check,timeout=min(self.context_seconds,max(.05,deadline-time.monotonic())),worker_sha256=self.worker_sha256 if self.product_mode else None)
+        outcome=run_context(self.profile.worker,plan,request,self._record['owner'],uuid.uuid4().hex,trust,load,publish,check,timeout=min(self.context_seconds,max(.05,deadline-time.monotonic())),worker_sha256=self.worker_sha256 if self.product_mode else None,oms_sha256=getattr(self,'oms_sha256',None) if self.product_mode else None)
         if self.product_mode:self._record['native_metrics']=outcome.metrics
         response['execution']={'state':outcome.state,'error':outcome.error,'pid':outcome.pid,'reaped':outcome.reaped,'consumed':outcome.consumed}
         if outcome.state!='EXITED_SUCCESSFULLY':
@@ -111,20 +111,26 @@ class ProductRollingWindowCoordinator(RollingWindowCoordinator):
     resource_profile='candidate-rolling-product-v1'
     execution_profile='candidate-rolling-product-v1'
 
-    def __init__(self,profile,*,worker_sha256=None,**kwargs):
+    def __init__(self,profile,*,worker_sha256=None,oms_sha256=None,**kwargs):
         super().__init__(profile,lambda *args:None,**kwargs)
         self.worker_sha256=worker_sha256
+        self.oms_sha256=oms_sha256
 
 
-def isolated_product_coordinator(profile,worker,sha256,**kwargs):
-    """Bind one absolute executable path to one expected SHA-256.
+def isolated_product_coordinator(profile,worker,sha256,*,oms_sha256=None,**kwargs):
+    """Bind one absolute executable path to one expected Worker SHA-256.
 
-    The default product coordinator leaves ``worker_sha256`` unset and continues
-    to require ``WORKER_SHA256``. This function does not search a directory,
-    read an environment variable, or select another executable.
+    The default product coordinator leaves both hashes unset and continues to
+    require the compiled Worker and OMS pins. ``oms_sha256`` is the operator's
+    selected library hash. This function does not search a directory, read an
+    environment variable, or select another executable.
     """
     path=Path(worker)
     if (type(sha256) is not str or len(sha256)!=64 or any(c not in '0123456789abcdef' for c in sha256)
             or not path.is_absolute()):
         raise ProtocolError('product-worker-identity')
-    return ProductRollingWindowCoordinator(replace(profile,worker=path),worker_sha256=sha256,**kwargs)
+    if oms_sha256 is not None and (type(oms_sha256) is not str or len(oms_sha256)!=64
+                                   or any(c not in '0123456789abcdef' for c in oms_sha256)):
+        raise ProtocolError('oms-library-identity')
+    return ProductRollingWindowCoordinator(
+        replace(profile,worker=path),worker_sha256=sha256,oms_sha256=oms_sha256,**kwargs)

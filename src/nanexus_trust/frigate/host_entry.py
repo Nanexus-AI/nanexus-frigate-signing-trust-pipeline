@@ -127,14 +127,23 @@ def _number(value, low, high):
     return value
 
 
-def _worker_identity(path, expected):
+def _sha256_text(value):
+    return type(value) is str and len(value) == 64 and all(c in '0123456789abcdef' for c in value)
+
+
+def _worker_identity(path, expected, *, legacy=True):
     """Reject a mismatched worker before a listener or ffmpeg starts.
 
     ``admit_worker_executable`` repeats this check before exec. The path can
     still be replaced in between; that TOCTOU limitation is unchanged.
+    Without ``historical.oms_sha256``, the configured hash must be the compiled
+    legacy pin. A selected pair matches the hash written by the operator.
     """
-    if expected != ACCEPTED_WORKER:
-        raise HostEntryError('worker-identity')
+    if legacy:
+        if expected != ACCEPTED_WORKER:
+            raise HostEntryError('worker-identity')
+    elif not _sha256_text(expected):
+        raise HostEntryError('configuration')
     try:
         info = path.lstat()
         if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode) or not 0 < info.st_size <= 8 << 20:
@@ -241,8 +250,16 @@ def validate_config(config):
             raise HostEntryError('camera-binding')
         bindings[logical] = material
         normalized.append({**item, 'rtsp_url': _rtsp(item['rtsp_url'])})
-    _fields(config['historical'], 'media_root scratch_root public_ca worker worker_sha256')
     historical = config['historical']
+    if type(historical) is not dict:
+        raise HostEntryError('configuration')
+    base = {'media_root', 'scratch_root', 'public_ca', 'worker', 'worker_sha256'}
+    if set(historical) == base:
+        selected_oms = None
+    elif set(historical) == base | {'oms_sha256'}:
+        selected_oms = historical['oms_sha256']
+    else:
+        raise HostEntryError('configuration')
     media = _absolute(historical['media_root'])
     scratch = _absolute(historical['scratch_root'])
     public_ca = _absolute(historical['public_ca'])
@@ -252,7 +269,10 @@ def validate_config(config):
         raise HostEntryError('configuration')
     if type(historical['worker_sha256']) is not str:
         raise HostEntryError('worker-identity')
-    _worker_identity(worker, historical['worker_sha256'])
+    if selected_oms is not None and (
+            not _sha256_text(selected_oms) or not _sha256_text(historical['worker_sha256'])):
+        raise HostEntryError('configuration')
+    _worker_identity(worker, historical['worker_sha256'], legacy=selected_oms is None)
     return {
         'frigate_version': VERSION,
         'api_origin': api,
@@ -275,6 +295,7 @@ def validate_config(config):
         'public_ca': public_ca,
         'worker': worker,
         'worker_sha256': historical['worker_sha256'],
+        'oms_sha256': selected_oms,
         'state_root': state,
     }
 
@@ -585,7 +606,8 @@ def start(config):
         raise HostEntryError('configuration')
     if not isinstance(config.get('policy'), LiveSigningPolicy):
         config = validate_config(config)
-    _worker_identity(config['worker'], config['worker_sha256'])
+    _worker_identity(
+        config['worker'], config['worker_sha256'], legacy=config.get('oms_sha256') is None)
     running = Running()
     try:
         private_directory(config['scratch_root'])
@@ -598,7 +620,8 @@ def start(config):
             session, config['media_root'], config['scratch_root'], config['worker'],
             config['public_ca'], config['ffprobe'])
         running.coordinator = isolated_product_coordinator(
-            profile, config['worker'], config['worker_sha256'])
+            profile, config['worker'], config['worker_sha256'],
+            oms_sha256=config.get('oms_sha256'))
         policy = config['policy']
         feeds = {
             item['camera']: Feed(
