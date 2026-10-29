@@ -1,0 +1,39 @@
+# Frigate 0.18.2-cfa08c5 technical prototype, NOT production defaults.
+# Edit the operator placeholders before use; never commit private configuration.
+mqtt:
+  enabled: false
+auth:
+  enabled: true
+tls:
+  enabled: true
+go2rtc:
+  api:
+    listen: "127.0.0.1:1984"
+  rtsp:
+    listen: "127.0.0.1:8554"
+  streams:
+    signed_source: rtsp://REPLACE_GATEWAY_HOST:REPLACE_PORT/REPLACE_SIGNED_PATH
+detectors:
+  cpu:
+    type: cpu
+    num_threads: 3
+record:
+  enabled: true
+  continuous:
+    days: 1
+cameras:
+  source_camera:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/signed_source
+          input_args: preset-rtsp-restream
+          roles: [record, detect]
+    detect:
+      enabled: true
+      width: 1280
+      height: 720
+      fps: 2
+    live:
+      streams:
+        Signed source: signed_source
