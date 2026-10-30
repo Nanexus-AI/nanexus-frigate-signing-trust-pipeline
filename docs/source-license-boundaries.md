@@ -1,45 +1,57 @@
 # Source licensing and distribution boundaries
 
-This factual schedule does not issue a new license, change an existing grant or establish ownership by file location. Keep root [LICENSE](../LICENSE), [NOTICE](../NOTICE) and applicable upstream records. The source-only technical prototype is not yet cleared for publication. `LICENSE.nanexus` is absent; no substitute grant with an assumed scope is created here.
+The current owner-directed Nanexus project uses **Option B: Apache-2.0-first for Nanexus-controlled later contributions, retaining earlier MIT permissions and all distinct upstream terms**. Root [LICENSE](../LICENSE) contains Apache-2.0. [NOTICE](../NOTICE) contains the complete contribution schedule, current source identities, retained Nanexus MIT permission and upstream attribution. This is a source-checkpoint license map, not public-release or output-redistribution approval.
 
-| Source scope | Existing declaration/provenance | Treatment and remaining action |
-|---|---|---|
-| Nanexus companion/product, tools, docs and tests | Root Apache-2.0 LICENSE and product statement in NOTICE | Apache applies to authorized Nanexus-owned work, subject to path exceptions and third-party portions. Do not infer ownership from a header-free file; final owner-approved scope remains required |
-| Integration paths listed below | NOTICE separately expresses MIT for integration additions outside its product Apache declaration | Preserve the existing MIT statement and relevant grants. This candidate path list is a conservative review schedule, not verified ownership or permission to relicense. Owner must confirm exact scope and complete the missing record before publication |
-| Eight Toolkit-derived files under src/nanexus_trust/historical_v2/videotrust/ | NOTICE lists original paths and commit678d8135f738a813831898388266842ede90c5e7; builder pins source hashes | Retain Apache and Toolkit attribution. No other Toolkit source is bundled |
-| third_party/media-signing-framework/ | ONVIF MIT LICENSE and PROVENANCE, r25.12.6/cf7785ab993c18d921094e8e505c2c34a1350f28; modified TLV/Meson scope recorded | Preserve MIT and modification records; do not call this Nanexus Apache or claim ONVIF endorsement |
-| tests/fixtures/frigate-0.18.2-cfa08c5.nginx.conf and frigate-0.18.2-cfa08c5.web-src-main.tsx | Copied Frigate source/configuration; full Frigate MIT text exists in NOTICE | Retain upstream attribution. NOTICE's schema-only applicability wording needs an approved factual extension to these fixtures and copied portions |
-| Frigate anchors/schema portions in src/nanexus_trust/frigate/{api_overlay,navigation_overlay,live_frontend_overlay,retained,historical_v2}.py and schema-bearing tests | Upstream copied portions mixed with integration logic | Preserve applicable Frigate MIT; this does not assign the entire mixed file to a new license or relicense upstream |
-| New source-build handoff: tools/frigate_source_build.py, tests/test_frigate_source_build.py, docs/frigate-source-build.md and docs/examples/frigate-source/{host.json,frigate.yml} | Existing product/root declaration; no separate file-specific grant established | Include in final owner path schedule. Templates carry no private inputs or test CA |
+The project owner confirmed the common owner-directed development workflow and authorized this scoped current licensing treatment. The prior generic authority holds are closed for the identified project contributions. This relies on that operative instruction together with established source lineage, not on a Git name, an organization label, absent/present SPDX headers or AI generation alone. No specific independently owned contribution lacking permission was identified in the reviewed set; verified Frigate text is explicitly excluded from Nanexus ownership.
 
-Integration-addition review paths:
+## Scope and accompanying records
 
-- `src/nanexus_trust/frigate/api_nanexus.py`
-- `src/nanexus_trust/frigate/api_overlay.py`
-- `src/nanexus_trust/frigate/live_frontend/web/src/api/live-signing.ts`
-- `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/SigningMonitor.tsx`
-- `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/SigningStatus.tsx`
-- `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/monitor-layout.ts`
-- `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/monitor-snapshot.ts`
-- `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/nanexus-live-entry.tsx`
-- `src/nanexus_trust/frigate/live_frontend_overlay.py`
-- `src/nanexus_trust/frigate/navigation_locations.nginx`
-- `src/nanexus_trust/frigate/navigation_overlay.py`
-- `ui/nanexus/historical.js`
-- `ui/nanexus/navigation-live.css`
-- `ui/nanexus/navigation.css`
-- `ui/nanexus/navigation.js`
+|Source scope|Applicable record and treatment|
+|---|---|
+|Nanexus companion/product, tools, docs and tests|Root Apache-2.0 LICENSE and product NOTICE, subject to the portion-specific exceptions below; no general relicensing of third-party code|
+|The 15 integration paths below|Apache-2.0 for the identified later project contributions; retained MIT for legacy portions and any valid earlier grants; Frigate MIT for verified external portions|
+|Eight Toolkit-derived files under src/nanexus_trust/historical_v2/videotrust/|Existing Apache terms and exact original paths/commit678d8135f738a813831898388266842ede90c5e7 in NOTICE; no other Toolkit source bundled|
+|third_party/media-signing-framework/|ONVIF MIT LICENSE, source headers and PROVENANCE at r25.12.6/cf7785ab993c18d921094e8e505c2c34a1350f28, including TLV/Meson modifications; not Nanexus Apache|
+|Copied Frigate fixtures, schema and overlay excerpts|Full Frigate MIT copyright/permission/disclaimer in NOTICE; copied portions remain external regardless of the integration's own-contribution license|
 
-The current schedule preserves the mixed-license decision. No NOTICE text, root license, ONVIF header or prior MIT grant was removed or replaced. Completing LICENSE.nanexus and the precise owner grant/path map requires separate authorization with established rights; do not fill the gap by declaring every integration file Apache.
+## Exact integration contribution schedule
+
+All 15 paths are **RESOLVED for this source checkpoint**. The source code itself is unchanged. These are contribution licenses, not exclusive whole-file ownership assignments. The complete schedule also travels in NOTICE because Builder copies LICENSE and NOTICE into local output; no new Builder behavior or separate LICENSE.nanexus is needed.
+
+|ID / exact path|Current SHA256|Treatment / contribution scope|Status|
+|---|---|---|---|
+|F01 `src/nanexus_trust/frigate/api_nanexus.py`|`d62bf6f96bfd84d24957082e47f716c8dcde0b1cc78aade8a9b2daaffdd0f79e`|MIT retained relay; Apache-2.0 version edit. M1: retained old relay text; A1: version literal change at current line 65. Retained text inside that line remains M1.|RESOLVED|
+|F02 `src/nanexus_trust/frigate/api_overlay.py`|`2ece9b3665852d32d324f124fd2c67f33045f27fc405b9cb47931c704a04f897`|Apache-2.0 project wrapper; Frigate MIT excerpts. A2: project hash/render/write logic and Nanexus insertions; exclude U1–U3 and retained repetitions in AUTH_INSERT, IMPORT_INSERT and ROUTER_INSERT.|RESOLVED|
+|F03 `src/nanexus_trust/frigate/live_frontend_overlay.py`|`eeb3f606288b6596fff71fe99faa0f679e39f28bc7badf41372b2afae033dc7f`|Apache-2.0 project wrapper; Frigate MIT excerpt. A3: project entry-patch/hash/write logic and Nanexus entry import/call; exclude U4 and retained context in ENTRY_INSERT.|RESOLVED|
+|F04 `src/nanexus_trust/frigate/navigation_overlay.py`|`02c0f5ddcda5552e0ab9298bd25ff655a638704c28c59f15dcbab931a2de4996`|Apache-2.0 project wrapper; Frigate MIT excerpts. A4: project nginx-patch/hash/asset logic and Nanexus markup; exclude U5–U7 and retained context in MAP_INSERT, BODY_INSERT and location replacement strings.|RESOLVED|
+|F05 `src/nanexus_trust/frigate/live_frontend/web/src/api/live-signing.ts`|`3ac5a35e8ea9d2fc67467550e0f2af00c622caab103a143626682eb396a2620a`|MIT retained unchanged client. M2: whole unchanged signing client. No later code delta is assigned Apache-2.0 by this schedule.|RESOLVED|
+|F06 `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/SigningMonitor.tsx`|`4543cb7b90057df2d44806c11eb0748df283f8e0bb3f64079136caa63fb9b7ae`|Apache-2.0 project component; prior MIT preserved. A6: project still/status monitor component; any valid earlier MIT permission remains available.|RESOLVED|
+|F07 `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/SigningStatus.tsx`|`3dbc64fac7238ba6d0f45fc0cc4e578dff833d7a1afa7134d0f705ed0c59bc1c`|MIT retained badge; Apache-2.0 client edits. M3: retained old label/subscription/desktop material; A7: client-injection edits at current lines 3–8,37–42,44–45,48–49,56–60. Retained substrings within edited lines remain M3.|RESOLVED|
+|F08 `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/monitor-layout.ts`|`a2af261d093442b08299980139cb8163b7e79b15b2d87c4564d9fa9c2872be9a`|Apache-2.0 project layout; prior MIT preserved. A8: project authorized-camera selection, geometry and pagination; any valid earlier MIT permission remains available.|RESOLVED|
+|F09 `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/monitor-snapshot.ts`|`b25c82e8ec28f3c4c8b515f374dada758355ba0ff3a5dd5f20252eb3c46c73ea`|Apache-2.0 project still loader; prior MIT preserved. A9: project per-mount snapshot session/loader; any valid earlier MIT permission remains available.|RESOLVED|
+|F10 `src/nanexus_trust/frigate/live_frontend/web/src/components/signing/nanexus-live-entry.tsx`|`1a5acc2ff744216bd869fa3880bfccc7df3c53f5e20eaffe59482e907479e523`|Apache-2.0 project entry; prior MIT preserved. A10: project camera/profile mapping and Live mount adapter; imported native implementations are not claimed as Nanexus code. Any valid earlier MIT permission remains available.|RESOLVED|
+|F11 `src/nanexus_trust/frigate/navigation_locations.nginx`|`3f370fd5a3f54e85e1ca21e7e031af89110b17eafffd704877a6d0fee1939282`|Apache-2.0 project configuration. A11: project Nanexus proxy-route configuration arrangement; no ownership of nginx software, standard directives or included external files is asserted.|RESOLVED|
+|F12 `ui/nanexus/historical.js`|`640d8167fb2eda61a408ad067c75d95fed9e66cf9fbc782538ef911ac14f941b`|Apache-2.0 project Historical view. A12: project Historical DOM/calendar/query/progress/status-grid implementation, including project predecessor UI contributions; no grant over any external implementation is implied.|RESOLVED|
+|F13 `ui/nanexus/navigation-live.css`|`c24c246f23ee999d6bad22306833a14a4b086c3ec287c43660f1c2f47b6301e2`|Apache-2.0 project navigation CSS; prior MIT preserved. A13: project flyout/Live/theme CSS and source-defined geometry; any valid earlier MIT permission remains available.|RESOLVED|
+|F14 `ui/nanexus/navigation.css`|`75cd27523831c4b3073fe91ec4b03d454f2882f4ce3cbc2300f173e7a20e506d`|Apache-2.0 project UI CSS. A14: project navigation/Historical layout and finding styles; system-font references/common syntax are not an exclusive Nanexus property claim.|RESOLVED|
+|F15 `ui/nanexus/navigation.js`|`fd6ecdc738bb72fc4d6029361ac6424f7f3b3ad479fda2a24ff080a1c11451d9`|Apache-2.0 project navigation; prior MIT preserved. A15: project DOM flyout/mount/lifecycle integration; any valid earlier MIT permission remains available.|RESOLVED|
+
+M1–M3 are the retained Nanexus MIT portions. F01 changes only the version literal at current line65; unchanged text in the edited line remains legacy material. F07's client edits are located at current lines3–8,37–42,44–45,48–49,56–60; the old equal blocks and retained substrings inside edited lines keep their applicable MIT terms. F05 is unchanged and remains covered by the retained MIT permission; no nonexistent later delta is invented to assign Apache to it. The old source hashes are recorded in NOTICE.
+
+The retained historical license document was untracked, so no original issuance date is asserted. This does not block current owner-authorized distribution of the identified project source with its complete retained permission record. Nine files have committed predecessors in Frigate MIT-context patches; repository context alone is not treated as proof of every Nanexus grant. Any valid earlier MIT or Apache permission survives the present own-contribution Apache declaration. There is no blanket MIT extension to all later code and no retroactive withdrawal of earlier grants.
+
+U1–U7 identify Frigate text at pinned commit `cfa08c56b23d23280c3d0a218e5a43182c97445b`: F02 AUTH_ANCHOR/IMPORT_ANCHOR/ROUTER_ANCHOR from API auth/application source; F03 ENTRY_ANCHOR from web/src/main.tsx; F04 MAP_ANCHOR/LOCATION_ANCHOR/BODY_ANCHOR from native nginx.conf. Retained upstream context in their INSERT/replacement strings remains Frigate MIT even where a literal also contains a Nanexus insertion. No license over Frigate-owned code is issued by Nanexus. Imports, framework conventions, system-font references and standard nginx syntax are not claims of upstream ownership or copied dependency implementation.
 
 ## Delivered source versus local outputs
 
-The source candidate contains original/integration source, vendored source with its licenses, approved scripts/templates/tests and documentation. It does not ship locally compiled Worker/OMS ELF, compiled frontend/Monaco bundles, fonts, upstream logos/icons, official-image layers, source archives, operator CA, keys, credentials, recordings, databases or private evidence. A package containing binaries is not source-only merely because their source is elsewhere. The builder's local manifest/acceptance identifies operator-owned bytes, not publisher or legal attestation.
+The source checkpoint contains source, vendored source with its licenses, approved tools/templates/tests and documentation. It does not ship compiled Worker/OMS ELF, frontend/Monaco bundles, fonts, upstream logos/icons, official-image layers, archives, operator CA/keys/credentials, recordings/databases or private evidence. A binary package is not source-only because its source exists elsewhere. Operators acquire the pinned official Frigate source/image and dependencies from their origins and build their own outputs.
 
-Operators acquire the pinned official Frigate source/image and dependencies from their documented origins. Their local outputs retain applicable Frigate MIT, ONVIF MIT and other code licenses, font/icon attribution and separate trademark conditions. Root Apache does not replace those terms. The existing output license directory is not a complete clearance of every dependency/font/icon or inherited image component. Later output redistribution needs its own exact inventory and permissions; it is not authorized by this guide.
+The fetched/generated runtime retains its distinct dependency/font/icon/model/binary/trademark obligations. Source-code license closure does not clear those outputs for redistribution. Keep Frigate native branding and authentication/TLS intact for the supported local experiment; Nanexus is an independent integration with no endorsement claim. No restricted Frigate graphic is added to this source checkpoint. Final public presentation/trademark clearance and any future compiled-output distribution remain separate gates; no rebrand, image or new delivery architecture is authorized here.
 
-Frigate's native UI branding remains untouched. Nanexus additions use their own N entry and names as an independent integration, with no official endorsement claim. No restricted Frigate graphic is bundled into this source candidate. Pinned upstream policy permits local interface display and compatibility references but separately restricts modified-fork branding; presentation clearance for any eventual public release must be recorded. No replacement logo/font, branded compiled bundle or modified Frigate image is distributed by this work.
+## Public-tree and operator boundaries
 
-## Public-tree review
+Ignore rules exclude private evidence/configuration, trust material, generated outputs and runtime data; they do not remove tracked content or reachable history. Preserve the reviewed source/history boundary before any separately authorized publication. Do not include legacy untracked packaging/integration/examples or private data in a source handoff. Laboratory tests including tests/test_frigate_host_entry.py must not be run as default acceptance or supplied private evidence just to make them work. Use only the documented focused source-builder checks; private-image instructions are historical workflows.
 
-Ignore rules protect future untracked local evidence/configuration, generated outputs, keys/certificates and runtime data; they do not remove tracked files or reachable history. Review an explicit source/history allowlist before any push. Existing laboratory-only tests, including tests/test_frigate_host_entry.py, must not be run as public default acceptance or supplied with private evidence to make them work. Historical private-image instructions are not the source installation path. No GitHub repository, commit or publication is authorized by these records.
+Keep tools/frigate_private_install.py and tools/build_historical_worker.py: Builder/paired tooling imports their existing constants and helpers. No required build input depends on ignored experiment code. This license revision changes bound NOTICE bytes, so a future source checkpoint/build has its own source/manifest/G8 identity; the frozen CP1 Candidate and V1 retain their original acceptance and must not be relabeled. Source licensing closure does not imply a new technical acceptance or completed real-source/operator E2E qualification.
+
+README presentation and illustrations remain deferred. No Git remote, push, publication or product runtime action is authorized by this document.

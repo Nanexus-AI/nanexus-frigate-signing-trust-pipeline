@@ -4,12 +4,12 @@ This guide builds local components from source and mounts them into the **unchan
 
 Supported binding only:
 
-- Pipeline ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`, plus the reviewed commit containing this handoff.
+- Technical baseline commit `8b8644a3b9e627a392166c398ab5ad1fca8d2de1`, with required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`. A later documentation/source handoff must name its own reviewed full commit; never guess a release ref.
 - Frigate `0.18.2-cfa08c5`, upstream `cfa08c56b23d23280c3d0a218e5a43182c97445b`.
 - Official runtime `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a`.
 - Official source archive SHA256 `fb5a04196c4be1dd332d4762e692ebb51fb5e949fafc2f3159830d44583ab005`.
 
-No private integrated image, retained compiled frontend/pair, private cache or `.local` experiment is an input. An earlier frozen source revision completed independent Node20 build and official-image runtime acceptance. This revised source candidate has static checks only: its build, wrapping-grid browser flow and clean-operator lifecycle still need separate authorization and validation. The commands below are an installation reference, not evidence that this candidate has been executed. Do not use the legacy packaging service.
+No private integrated image, retained compiled frontend/pair, private cache or `.local` experiment is an input. The technical baseline completed an independent Node20 build, local G1–G8 artifact acceptance and native official-image checks. Bounded browser validation demonstrated login/navigation, synthetic Historical wrapping and synthetic camera isolation. Real terminal Historical rendering, independent operator installation/lifecycle and broader UI coverage remain pending. These instructions are a pre-publication handoff, not proof of a complete end-user qualification. Do not use the legacy packaging service.
 
 ## 1. Prepare the developer environment
 
@@ -25,6 +25,8 @@ apt-get install --no-install-recommends \
 ```
 
 Package availability is not guaranteed. Both `/usr/bin/gcc` and `/usr/bin/g++` must actually report `13.3.0-6ubuntu2~24.04.1`; installing another compiler on PATH is insufficient for the existing OMS builder. Stop if this profile cannot be supplied; do not silently relax its version check. Obtain Node20 from the official [Node release directory](https://nodejs.org/dist/latest-v20.x/) and Docker from its official Linux installation instructions. No Buildx is needed. The upstream recipe fixes Node major20, not an exact patch/npm release; record actual versions. OMS needs OpenSSL development>=3, Meson>=0.49 (recorded reference1.12.1), Ninja and readelf. Use a dedicated environment if necessary; this tool does not install dependencies or alter system alternatives.
+
+Your administrator supplies Node20 with its npm executable on PATH; this guide does not install or upgrade it. If installed outside the system PATH, set `NODE20_BIN` to that installation's `bin` directory and run `export PATH="$NODE20_BIN:$PATH"` in this shell. Record actual versions, not a developer cache location. No Compose or Buildx is required. Initial acquisition requires authorized access to the source handoff, official Node/package origins, GitHub codeload, GHCR and the npm registry/dependency origins used by upstream postinstall scripts. Offline/private-cache availability is not assumed.
 
 Use the same Bash session for the following commands. Stop on errors and keep operator-created files private; the builder sets its build subprocess umask explicitly to022 for the existing paired layout. Check before building:
 
@@ -49,14 +51,21 @@ Python3.11+ with actual tar data-filter support is required. Allow disk for full
 
 ## 2. Acquire reviewed public sources and official upstream inputs
 
-Use a full public Git clone containing the paired builder's required ancestry, not a source ZIP or shallow HEAD. The public repository URL and release commit must come from the reviewed source release; no repository is created by this guide. Set `PIPELINE_ROOT` to that clean clone. This tool must itself be tracked in the reviewed commit; an uncommitted implementation checkout is intentionally not build-admitted.
+Use a full Git clone from the authorized handoff containing the paired builder's required ancestry, not a source ZIP or shallow HEAD. The source origin and reviewed commit must be supplied explicitly before publication or a private acceptance handoff; no repository is created by this guide. Set `PIPELINE_ROOT` to that clean clone. This tool must itself be tracked in the reviewed commit; an uncommitted implementation checkout is intentionally not build-admitted.
+
+Before publication the master/operator must supply an **authorized full-history Git origin** and an **exact reviewed handoff commit** through an approved private channel. No public repository URL or release currently exists. The frozen technical candidate is not automatically a license to share source or generated outputs. Do not create a repository or copy the entire development workspace. The handoff must include this guide (or explicit approved errata); a docs-only checkpoint may have a different HEAD from the frozen technical candidate.
 
 ```sh
-PIPELINE_ROOT=/absolute/path/to/reviewed-public-clone
+SOURCE_ORIGIN=REPLACE_WITH_AUTHORIZED_FULL_GIT_ORIGIN
+REVIEWED_SOURCE_COMMIT=REPLACE_WITH_REVIEWED_FULL_HANDOFF_COMMIT
+PIPELINE_ROOT=/absolute/path/to/fresh-operator-clone
+# Substitute the supplied origin/ref before running; full clone, no --depth/source ZIP.
+git clone --no-local "$SOURCE_ORIGIN" "$PIPELINE_ROOT"
+git -C "$PIPELINE_ROOT" checkout --detach "$REVIEWED_SOURCE_COMMIT"
 cd "$PIPELINE_ROOT"
-git status --short
+test "$(git rev-parse HEAD)" = "$REVIEWED_SOURCE_COMMIT"
+test -z "$(git status --porcelain --untracked-files=normal)"
 SOURCE_COMMIT=$(git rev-parse HEAD)
-# Compare SOURCE_COMMIT with the independently reviewed release commit before continuing.
 FRIGATE_IMAGE=ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a
 DEVELOPER_ROOT=/absolute/private/developer-workspace
 mkdir -p "$DEVELOPER_ROOT/inputs"
@@ -151,7 +160,7 @@ assert p.read_bytes().count(b'-----BEGIN CERTIFICATE-----') == 1, 'Supply exactl
 PYCODE
 ```
 
-These checks establish readability and parseability, not signer-chain compatibility. Missing/unreadable CA or wrong path prevents Host Entry readiness; mismatched trust must retain its actual operational/verification finding, never a manufactured media verdict or a fallback test anchor. Keep `historical.public_ca` at `/nanexus/trust/ca.pem`, with the trust directory mounted read-only.
+These checks establish readability and parseability, not signer-chain compatibility. A missing CA or wrong/symlink path fails shared Host Entry configuration. An existing unreadable or malformed CA can pass the initial file-existence check and fail later during Historical trust reading/admission; `host-entry-ready` does not prove CA usability. Historical trust input is limited to 32768 bytes. Mismatched trust retains its actual operational/verification finding, never a prescribed RED result, manufactured media verdict or fallback test anchor. Live presence/freshness status does not evaluate this CA. Keep `historical.public_ca` at `/nanexus/trust/ca.pem`, with the trust directory mounted read-only.
 
 This is an independent local **transport** key/certificate, not a signing key. Browser acceptance of its self-signed identity is manual; Host Entry pins its public leaf. The prototype certificate expires after30 days; deliberate renewal requires native TLS/Host Entry repinning and remount/restart. Never disable backend pinning/native HTTPS to bypass this. Keep these files/token/native logs private. Host config/token/state/scratch must be owned by UID1000, with directory0700/private files0600. UID1000 must read/traverse Historical originals. No extra user provisioning is provided.
 
@@ -210,7 +219,7 @@ For initialized operation both generated fragments must exist. Confirm listen.co
 
 ## 7. Run the unchanged official image with exact mounts
 
-Use a new independent name/unused loopback HTTPS port; the template browser_origin is18991. No entrypoint/user override, host daemon, bootstrap hook, Docker socket or privileged mode. Use a clean browser profile for the new origin. Full frontend hides base-only stale chunks; native login/public assets/Monaco files must all come from the complete local build. Static asset caching can persist for a year; don't hot-swap builds under old URLs and assume clients refresh.
+Use a new independent name/unused loopback HTTPS port; the template browser_origin is18991. If changing that port, change **all three** together: Docker host binding below, private `host.json` browser_origin, and browser/forwarded URL. Keep the same scheme/host/port at the browser because Historical origin/host checks enforce it. The container API origin remains8971; do not change internal listener ports. No entrypoint/user override, host daemon, bootstrap hook, Docker socket or privileged mode. Use a clean browser profile for the new origin. Full frontend hides base-only stale chunks; native login/public assets/Monaco files must all come from the complete local build. Static asset caching can persist for a year; don't hot-swap builds under old URLs and assume clients refresh.
 
 The table and shell function below describe the validated 20-mount layout. `$ARTIFACTS` is build-generated and immutable; `$RUNTIME_ROOT` is the fresh operator-created private runtime. The nginx directory is an operator-created complete copy of the canonical build output, not a writable alias to it.
 
@@ -286,7 +295,32 @@ docker exec "$RUN_NAME" nginx -t
 docker logs --tail 100 "$RUN_NAME"
 ```
 
-Confirm the exact requested official reference, Linux/amd64, native /init, health and UID1000 Host Entry readiness marker. Relate the target image ID to a fresh lookup of that exact reference on the same daemon; do not compare `.Image` directly with the registry digest or assume it is always a configuration digest. Platform-qualified and default inspections can expose different descriptor IDs. The build manifest records the default exact-reference inspection, not a universal container-ID equality. Docker health probes native API, not Nanexus functionality. Internal go2rtc API1984/RTSP8554 must remain consistent; no host publication needed. Open `https://127.0.0.1:18991`, manually accept your transport leaf, log in natively, inspect native UI and choose Live Monitor/Historical Verification. Preserve native session/camera authorization; anonymous static assets are normal, anonymous protected data is not. Native editor should load Monaco workers without404. Verify UI/API agree, not merely index200.
+Confirm the exact requested official reference, Linux/amd64, native /init, health and UID1000 Host Entry readiness marker. Relate the target image ID to a fresh lookup of that exact reference on the same daemon; do not compare `.Image` directly with the registry digest or assume it is always a configuration digest. Platform-qualified and default inspections can expose different descriptor IDs. The build manifest records the default exact-reference inspection, not a universal container-ID equality. Docker health probes native API, not Nanexus functionality. Internal go2rtc API1984/RTSP8554 must remain consistent; no host publication needed. Open `https://127.0.0.1:18991` in a browser on the container host, manually review/accept your private transport identity, log in natively, and choose **N → Live Monitor / Historical Verification**. The initial native username is `admin`; retrieve its generated password privately from this target's logs and store it in your operator-controlled private location before removing a container. Do not put passwords/cookies in reports or screenshots. Reuse existing credentials/token/TLS on restart; do not rerun the initial generation commands. Preserve native session/camera authorization; anonymous static assets are normal, anonymous protected data is not. Native editor should load Monaco workers without404. Verify UI/API agree, not merely index200.
+
+### Windows 11 / browser on another machine
+
+The host's `127.0.0.1` is not your Windows computer's loopback. Before starting a human review, obtain explicit approval for a client-local SSH forward using an already authorized SSH identity/host alias. Do not broaden Docker to `0.0.0.0`, create a public proxy, change origin validation, or disable HTTPS. In Windows PowerShell with the existing OpenSSH client:
+
+```powershell
+$K11SshAlias = 'REPLACE_WITH_EXISTING_AUTHORIZED_SSH_ALIAS'
+# Confirm client port18991 is free; close only your own conflicting session, never an unknown service.
+Get-NetTCPConnection -LocalPort 18991 -State Listen -ErrorAction SilentlyContinue
+ssh -N -L 127.0.0.1:18991:127.0.0.1:18991 $K11SshAlias
+```
+
+Keep that approved forward open and browse `https://127.0.0.1:18991` on Windows. If using a different approved host port, substitute the identical port at both forward ends and in browser_origin/Docker/browser URL. Existing remote tooling does not prove a browser forward exists. Check the presented transport fingerprint against the privately obtained certificate; a certificate error/expiry must be resolved deliberately, not by globally disabling browser validation. Keep native authentication. If no safe access path exists, stop before handing off a running session. This example is a future authorized access step, not a tunnel created by the guide.
+
+### Bounded readiness and camera membership
+
+Allow up to 180 seconds for initial native/Host readiness in an operator test, then stop the named target normally on failure; no automatic restart/repair. Docker health only checks native API. Look for `host-entry-ready; readiness is not a signing verdict.` and inspect UID1000 with:
+
+```sh
+docker top "$RUN_NAME" -eo pid,ppid,uid,args
+```
+
+Observe an authenticated native profile and Nanexus session/Live availability in the browser's network panel; anonymous protected data must return401/403. Do not export authorization headers/cookies or run the Host Entry CLI as a dry run: it starts readers/listeners and has no --check-only mode.
+
+Tiles come from **authorized, enabled, non-replay native cameras**, matched to one canonical Host camera/stream/context binding each. There is no camera-add control inside Live Monitor. The monitor reads membership when opened; after deliberate configuration/restart, leave/reopen the monitor. Use one live stream per camera for this M1 setup (the entry chooses the first sorted stream label). Empty tiles with disabled cameras are not a signing verdict. See the [single integrated E2E runbook](frigate-e2e-acceptance.md) for the three-camera/operator acceptance gate.
 
 With your authorized real signed stream, record actual current receipt freshness, mapping/session, states/reasons. UNKNOWN/DEGRADED/ACTIVE are observations, not installer targets; Live is structural/freshness policy, not real-time crypto trust. Historical requires matching originals/catalog/CA and a bounded product request that reaches the selected native Worker/OMS; report its true verdict/coverage, not a predetermined expected color. Missing real sample/trust/network is a distinct functional gap. Do not replay old captures or add fault injection.
 
@@ -302,7 +336,7 @@ Enable native recording/detection as in the template, adjusting dimensions only 
 
 ## 9. Stop, restart, recreate and recover without deleting data
 
-Check accepted immutable output and the nginx working-copy comparison before reusing it. Normal stop/start and recreation affect only your named target:
+Keep native admin credentials and logs private and preserved before removing a container. Native cache and Docker logs are container-local in this 20-mount contract; they are not a new persistent mount. Finalize/check recordings before recreation and capture needed logs separately. Check accepted immutable output and the nginx working-copy comparison before reusing it. Normal stop/start and recreation affect only your named target:
 
 ```sh
 docker stop --timeout 30 "$RUN_NAME"
@@ -316,12 +350,14 @@ run_integrated
 
 Host Entry/readers/Worker must terminate with native s6 and start again automatically. Keep data, config, certificate/token, selected hashes and working-copy state; do not run docker-exec to launch observers. In-flight Historical resume is not promised. If stop times out or processes remain, record a failure for review; don't call forced termination graceful.
 
+For a configuration update: stop only your named target, privately back up the operator config, edit those copies, retain selected pair hashes/path/trust, check syntax/mapping/UID permissions, verify accepted artifacts and the nginx copy, then start/reopen. Do not edit source, reseal hashes, restore original databases or change policy to obtain a target state. A parse check is not runtime admission.
+
 For native-only recovery, omit every integration mount/environment, including nginx/API/web/source/pair/s6/Historical:
 
 ```sh
 docker stop --timeout 30 "$RUN_NAME"
 docker rm "$RUN_NAME"
-docker run --platform linux/amd64 -d --name "$RUN_NAME" --restart no --shm-size=256m \
+docker run --platform linux/amd64 -d --name "$RUN_NAME" --restart no --shm-size=256m --cpus=4 --memory=4g \
   -p 127.0.0.1:18991:8971 \
   --mount "type=bind,src=$RUNTIME_ROOT/config,dst=/config" \
   --mount "type=bind,src=$RUNTIME_ROOT/media,dst=/media/frigate" \
@@ -339,7 +375,7 @@ Verify native login/API/UI and retained recording playback. This preserves indep
 - Missing worker/reference, alternate symlink, mode drift or changed bytes: verification fails. Never reseal manually to hide a replacement.
 - Missing acceptance: review manifest digest, use explicit accept, then verify with --require-accepted. Existing private fixed-hash installer is a different workflow and remains unchanged.
 - Nginx missing include/permission error: complete writable operational copy is required; inspect generated fragments against intended TLS/listen settings. Never relax canonical inventory.
-- Missing public CA or incompatible signing trust: supply the actual environment's public CA at trust/ca.pem, check the RO mount and UID1000 access; no private key or test-root fallback. Parsing a PEM does not prove chain compatibility.
+- Missing CA path: Host configuration fails. Unreadable/malformed/oversized CA may fail later when Historical reads or admits trust; check the RO mount, UID1000 access, one PEM and the 32768-byte cap. Wrong but parseable CA retains its actual finding. No signing key/test-root fallback; PEM parsing is not chain compatibility.
 - Host Entry configuration/identity/TLS/permission failure: check placeholders, host/container Worker path translation, both selected hashes, UID1000 modes, readable original media and matching pinned leaf. Do not disable auth/pinning.
 - Pair executable blocked or ABI mismatch: inspect host noexec/architecture and actual pinned runtime library resolution. Source identity alone does not qualify arbitrary toolchains.
 - Live or Historical unavailable: distinguish native readiness, mapping/network/trust/media/metadata gaps from actual signing result; report honest state.
@@ -348,6 +384,6 @@ Focused offline checks only: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest disc
 
 ## Source and release boundaries
 
-Read [source license boundaries](source-license-boundaries.md) before sharing source or generated outputs. Existing mixed Apache/MIT and third-party notices remain; `LICENSE.nanexus` scope is not fabricated here. Frigate native branding is preserved; Nanexus is an independent integration, not an endorsed fork. Ship source only, not the locally built web/fonts/icons/ELF, official-image layers, credentials, CA, media/DB or private task evidence. Private-image/legacy packaging instructions are not this installation route.
+Read [source license boundaries](source-license-boundaries.md) before sharing source or generated outputs. The current Apache/MIT contribution schedule and complete retained terms are in NOTICE and the linked boundaries document; a separate `LICENSE.nanexus` is not required. Frigate native branding is preserved; Nanexus is an independent integration, not an endorsed fork. Ship source only, not the locally built web/fonts/icons/ELF, official-image layers, credentials, CA, media/DB or private task evidence. Private-image/legacy packaging instructions are not this installation route.
 
-The current source candidate is uncommitted and cannot pass the builder's reviewed-commit gate as a release yet. Master source review/checkpoint and a separately authorized clean build/runtime gate must precede any working-install claim. Static syntax, mount and template consistency do not establish runtime health, UI rendering, inference or signing results. Native cleanup warnings and unresolved R2 failure-isolation limits remain documented in the [support contract](support-matrix.md); no HA/production guarantee follows.
+The frozen technical baseline is committed and locally G8 accepted, with bounded native integration and synthetic browser evidence. This documentation and licensing checkpoint has not been built or G8-accepted; it does not replace the frozen technical baseline. A reviewed handoff ref and the comprehensive human-operated real-source E2E gate must precede an ordinary-user end-to-end claim. Preserve the old accepted manifest/acceptance; a fresh build needs its own reviewed identities and local acknowledgment. Native cleanup warnings and unresolved R2 failure-isolation limits remain documented in the [support contract](support-matrix.md); no HA/production guarantee follows.
