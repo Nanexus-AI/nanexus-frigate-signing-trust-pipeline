@@ -33,13 +33,13 @@
       "rendition": "signed-main",
       "source_id": "operator-source",
       "revision": "operator-revision-1",
-      "rtsp_url": "rtsp://REPLACE_GATEWAY_HOST:REPLACE_PORT/REPLACE_SIGNED_PATH"
+      "rtsp_url": "rtsp://REPLACE_SIGNING_SOURCE_HOST:REPLACE_PORT/REPLACE_SIGNED_PATH"
     }
   ],
   "historical": {
     "media_root": "/nanexus/recordings",
     "scratch_root": "/nanexus/scratch",
-    "public_ca": "/nanexus/private/ca.pem",
+    "public_ca": "/nanexus/trust/ca.pem",
     "worker": "/REPLACE_SELECTED_HOST_WORKER",
     "worker_sha256": "REPLACE_BY_EXPLICIT_PAIR_SELECTION"
   },

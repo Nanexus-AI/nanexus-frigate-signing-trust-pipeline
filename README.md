@@ -1,19 +1,15 @@
-# Nanexus trust contracts
+# Nanexus signing trust integration for Frigate
 
-Python contracts, bounded Historical verification, Live Signing Status and a companion integration foundation for Frigate v0.18.0. A read-only SQLite adapter stages retained media for the existing finite Toolkit backend. Explicit playback/rendition mapping, nonblocking observation sources, durable jobs and a local programmatic service boundary prepare later Frigate-native desktop integration. A private GET-only Live transport supports a separate version-bound Frigate authentication relay. The separate pinned Frigate desktop patch displays Live Signing Status on the [validated desktop surfaces](docs/support-matrix.md). No installation package is provided.
+M1 is a **Frigate-first source-only technical prototype** for native Linux amd64 and **Frigate 0.18.2-cfa08c5**. Build Nanexus integration assets locally and mount them into the unchanged official Frigate image. No Nanexus container image or prebuilt frontend/Worker/OMS package is supplied.
 
-The pinned desktop patch also offers retained-recording Historical Verification from single-camera Review/Export, with durable jobs and evidence access; see the [support matrix](docs/support-matrix.md). This does not verify exported MP4 files.
+Start with the [operator build and installation guide](docs/frigate-source-build.md). It covers prerequisites, pinned source/image acquisition, local build and explicit acceptance, private configuration, all 20 mounts, startup, use and data-preserving recovery. The [support contract](docs/support-matrix.md) separates observed capabilities from pending acceptance.
 
-Python 3.11+; standard library only. Run the targeted tests from the repository root:
+- **Live Monitor:** supported signing-evidence presence, receipt freshness and observation continuity. ACTIVE does not mean cryptographic validity or certificate trust. Desktop tiles load one still image per camera per mounted session; image refresh/retry and grid video playback are not provided.
+- **Historical Verification:** choose an authorized camera and UTC interval, then verify the corresponding original retained signed recordings. Pending/completed recording blocks form one chronological, fixed-width wrapping grid. GREEN/AMBER/RED describe backend findings; execution completion is not an all-VALID result. The grid correction is source-only and awaits build/browser acceptance.
+- **Signing trust:** provide one public CA from your signing environment at `nanexus-runtime/trust/ca.pem`, mounted read-only at `/nanexus/trust/ca.pem`. **A single trusted CA certificate is sufficient for the current supported setup.** No CA or signing private key is distributed. A compatible third-party signed source or an optional Nanexus Gateway can supply media; Gateway is not required.
 
-```sh
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests -v
-```
+Frigate native branding, authentication and TLS remain intact. Nanexus is an independent integration, not an official or endorsed Frigate product. See [license and source boundaries](docs/source-license-boundaries.md): existing Apache/MIT and third-party notices remain applicable; missing license-scope records and presentation clearance still gate publication. Do not redistribute locally generated branded bundles on the strength of this source guide.
 
-The domain contracts keep Historical verification, metadata coverage and requested-range coverage separate. A verification context can be wider than the requested range and contain gaps. Neither a storage file nor a context envelope is a coverage assertion.
+The earlier clean-build/runtime evidence does not qualify this new source candidate. Independent build, actual Historical browser-result flow and clean-operator installation/recovery acceptance remain pending. No production, HA, mobile, other Frigate-version or exported-MP4 verification claim is made. Retained data and native metadata must not be rewritten to make verification succeed.
 
-Evidence bundles contain a versioned `receipt.json` and bundle-relative artifacts. Newly issued supported bundles can be relocated and recognized without media processing, external tools, database or network access. Recognition establishes supported structure and hash consistency of a **recorded result**, not a new cryptographic verdict or issuer authenticity.
-
-See the [integration foundation](docs/integration.md), [Live Signing Status](docs/live.md), the [Historical API](docs/historical.md), and the [evidence contract](docs/evidence-format.md). Live observation is separate from Historical cryptographic verification and coverage. All Historical verdicts, including legitimate `PARTIAL` and `UNKNOWN`, are preserved. Only the documented Frigate v0.18.0 profile is targeted. Real deployment acceptance, licensing for distribution and release qualification remain future work; no released integration is claimed.
-
-A separate, version-pinned Frigate 0.18.2 private installation prototype is documented in [the private Frigate procedure](docs/frigate-private-install.md). It reuses the accepted private frontend and portable pair, and is not a public installation package.
+Use only the focused checks documented in the guide when separately authorized. Do not run broad test discovery or `tests/test_frigate_host_entry.py`; that laboratory test can contact protected services. Older offline, 0.18.0 Review/Export, private-install and private-image documents are historical contracts, not this release's installation path.

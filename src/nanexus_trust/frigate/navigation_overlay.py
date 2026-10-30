@@ -15,8 +15,8 @@ UI_DIRECTORY = Path('ui/nanexus')
 UI_SHA256 = {
     'navigation.js': 'fd6ecdc738bb72fc4d6029361ac6424f7f3b3ad479fda2a24ff080a1c11451d9',
     'navigation-live.css': 'c24c246f23ee999d6bad22306833a14a4b086c3ec287c43660f1c2f47b6301e2',
-    'historical.js': 'b23512a112527b2180687d42b7886d983edd78e284539ff2ef8210acafecdd0d',
-    'navigation.css': '997c3e01dc2ad98b56e2ac15099c647c4891f93c48efe1a7a884e457ca7e3b22',
+    'historical.js': '640d8167fb2eda61a408ad067c75d95fed9e66cf9fbc782538ef911ac14f941b',
+    'navigation.css': '75cd27523831c4b3073fe91ec4b03d454f2882f4ce3cbc2300f173e7a20e506d',
 }
 MAP_ANCHOR = '    map_hash_bucket_size 256;\n\n    include mime.types;\n'
 MAP_INSERT = (

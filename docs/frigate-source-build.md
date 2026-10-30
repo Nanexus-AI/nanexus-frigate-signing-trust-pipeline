@@ -9,7 +9,7 @@ Supported binding only:
 - Official runtime `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a`.
 - Official source archive SHA256 `fb5a04196c4be1dd332d4762e692ebb51fb5e949fafc2f3159830d44583ab005`.
 
-No private integrated image, retained compiled frontend/pair, private cache or `.local` experiment is an input. Clean Node20 compilation and runtime use require separate validation; the implementation's offline tests do not establish those results. Do not use the legacy packaging service.
+No private integrated image, retained compiled frontend/pair, private cache or `.local` experiment is an input. An earlier frozen source revision completed independent Node20 build and official-image runtime acceptance. This revised source candidate has static checks only: its build, wrapping-grid browser flow and clean-operator lifecycle still need separate authorization and validation. The commands below are an installation reference, not evidence that this candidate has been executed. Do not use the legacy packaging service.
 
 ## 1. Prepare the developer environment
 
@@ -116,13 +116,13 @@ The following examples are **templates**, not valid until operator placeholders 
 ```sh
 RUNTIME_ROOT="$DEVELOPER_ROOT/runtime"
 mkdir -m 700 "$RUNTIME_ROOT"
-mkdir -m 700 "$RUNTIME_ROOT/private" "$RUNTIME_ROOT/state" "$RUNTIME_ROOT/scratch"
+mkdir -m 700 "$RUNTIME_ROOT/private" "$RUNTIME_ROOT/trust" "$RUNTIME_ROOT/state" "$RUNTIME_ROOT/scratch"
 mkdir -p "$RUNTIME_ROOT/config" "$RUNTIME_ROOT/media/recordings" "$RUNTIME_ROOT/tls"
 install -m 600 docs/examples/frigate-source/frigate.yml "$RUNTIME_ROOT/config/config.yml"
 install -m 600 docs/examples/frigate-source/host.json "$RUNTIME_ROOT/private/host.json"
 # Edit both private copies: replace EVERY operator placeholder with authorized values.
 # Copy a real PUBLIC verification trust CA for your signer (never its private key):
-install -m 600 /absolute/operator/public-verification-ca.pem "$RUNTIME_ROOT/private/ca.pem"
+install -m 600 /absolute/operator/public-verification-ca.pem "$RUNTIME_ROOT/trust/ca.pem"
 python3 - "$RUNTIME_ROOT/private/live.token" <<'PYCODE'
 import os,secrets,sys
 fd=os.open(sys.argv[1],os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
@@ -132,6 +132,26 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj /CN=127.0.0.1 \
   -keyout "$RUNTIME_ROOT/tls/privkey.pem" -out "$RUNTIME_ROOT/tls/fullchain.pem"
 chmod 600 "$RUNTIME_ROOT/tls/privkey.pem"
 ```
+
+**A single trusted CA certificate is sufficient for the current supported setup.** The flow creates `trust/` only; it never creates, downloads or embeds a signing CA. Supply the public CA from the actual signing environment through its operator/vendor's trusted channel. A signing private key stays on the signer. Its signer certificate identifies that signer; the CA is the issuing authority, and the public CA certificate you choose is the verifier's trust anchor. A leaf signer certificate is not automatically a CA trust anchor. Do not copy a laboratory test CA into a public package.
+
+Two source paths use the same verification configuration: an **optional Nanexus Gateway**, with signing/key setup managed separately, or a **third-party standards-compliant signing source** within the supported H.264/evidence subset. The verifier need not run Gateway or obtain vendor-only telemetry. Not every ONVIF device/profile is qualified. Both private templates must identify the same authorized source; Host Entry rejects credential-bearing RTSP URLs.
+
+After supplying the CA, check it as the UID1000 operator before activation:
+
+```sh
+test -r "$RUNTIME_ROOT/trust/ca.pem" && test -s "$RUNTIME_ROOT/trust/ca.pem"
+openssl x509 -in "$RUNTIME_ROOT/trust/ca.pem" -noout -subject -issuer
+python3 - "$RUNTIME_ROOT/trust/ca.pem" <<'PYCODE'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])
+assert not p.is_symlink() and p.is_file()
+assert p.read_bytes().count(b'-----BEGIN CERTIFICATE-----') == 1, 'Supply exactly one public CA certificate'
+PYCODE
+```
+
+These checks establish readability and parseability, not signer-chain compatibility. Missing/unreadable CA or wrong path prevents Host Entry readiness; mismatched trust must retain its actual operational/verification finding, never a manufactured media verdict or a fallback test anchor. Keep `historical.public_ca` at `/nanexus/trust/ca.pem`, with the trust directory mounted read-only.
 
 This is an independent local **transport** key/certificate, not a signing key. Browser acceptance of its self-signed identity is manual; Host Entry pins its public leaf. The prototype certificate expires after30 days; deliberate renewal requires native TLS/Host Entry repinning and remount/restart. Never disable backend pinning/native HTTPS to bypass this. Keep these files/token/native logs private. Host config/token/state/scratch must be owned by UID1000, with directory0700/private files0600. UID1000 must read/traverse Historical originals. No extra user provisioning is provided.
 
@@ -192,6 +212,31 @@ For initialized operation both generated fragments must exist. Confirm listen.co
 
 Use a new independent name/unused loopback HTTPS port; the template browser_origin is18991. No entrypoint/user override, host daemon, bootstrap hook, Docker socket or privileged mode. Use a clean browser profile for the new origin. Full frontend hides base-only stale chunks; native login/public assets/Monaco files must all come from the complete local build. Static asset caching can persist for a year; don't hot-swap builds under old URLs and assume clients refresh.
 
+The table and shell function below describe the validated 20-mount layout. `$ARTIFACTS` is build-generated and immutable; `$RUNTIME_ROOT` is the fresh operator-created private runtime. The nginx directory is an operator-created complete copy of the canonical build output, not a writable alias to it.
+
+| Host source | Container destination | Mode | Created by / purpose |
+|---|---|---|---|
+| `$RUNTIME_ROOT/config` | `/config` | RW | Operator / native configuration and database |
+| `$RUNTIME_ROOT/tls` | `/etc/letsencrypt/live/frigate` | RW | Operator / native transport TLS |
+| `$ARTIFACTS/service` | `/etc/s6-overlay/s6-rc.d/nanexus-private` | RO | Builder / individual API or s6 integration |
+| `$ARTIFACTS/service-enable` | `/etc/s6-overlay/s6-rc.d/user/contents.d/nanexus-private` | RO | Builder / individual API or s6 integration |
+| `$RUNTIME_ROOT/media` | `/media/frigate` | RW | Operator / native media store |
+| `$ARTIFACTS/ui` | `/nanexus-navigation` | RO | Builder / four Nanexus UI source assets |
+| `$ARTIFACTS/boot.py` | `/nanexus/boot.py` | RO | Builder / existing non-root Host startup |
+| `$RUNTIME_ROOT/tls/fullchain.pem` | `/nanexus/instance.pem` | RO | Operator / public transport leaf pin |
+| `$ARTIFACTS/pair` | `/nanexus/pair` | RO | Builder / accepted local Worker and paired OMS |
+| `$RUNTIME_ROOT/private` | `/nanexus/private` | RO | Operator / Host configuration and Live bearer |
+| `$RUNTIME_ROOT/media/recordings` | `/nanexus/recordings` | RO | Operator / RO view of the same actual native recordings |
+| `$RUNTIME_ROOT/scratch` | `/nanexus/scratch` | RW | Operator / Nanexus scratch |
+| `$ARTIFACTS/src` | `/nanexus/src` | RO | Builder / backend source |
+| `$RUNTIME_ROOT/state` | `/nanexus/state` | RW | Operator / Nanexus state |
+| `$RUNTIME_ROOT/trust` | `/nanexus/trust` | RO | Operator / public CA only, no fabricated CA |
+| `$ARTIFACTS/api/auth.py` | `/opt/frigate/frigate/api/auth.py` | RO | Builder / individual API or s6 integration |
+| `$ARTIFACTS/api/fastapi_app.py` | `/opt/frigate/frigate/api/fastapi_app.py` | RO | Builder / individual API or s6 integration |
+| `$ARTIFACTS/api/nanexus.py` | `/opt/frigate/frigate/api/nanexus.py` | RO | Builder / individual API or s6 integration |
+| `$ARTIFACTS/web` | `/opt/frigate/web` | RO | Builder / individual API or s6 integration |
+| `$RUNTIME_ROOT/nginx` | `/usr/local/nginx/conf` | RW | Operator copy of build nginx / native generated fragments |
+
 The shell function below is a documented command for this one target, not a lifecycle installer. Run it only after private placeholders and certificate/CA/media access are correct:
 
 ```sh
@@ -199,7 +244,8 @@ RUN_NAME=nanexus-source-local
 run_integrated() {
   python3 "$PIPELINE_ROOT/tools/frigate_source_build.py" verify \
     --output "$BUILD_OUTPUT" --require-accepted || return
-  docker run --platform linux/amd64 -d --name "$RUN_NAME" --restart no --shm-size=256m \
+  test -r "$RUNTIME_ROOT/trust/ca.pem" && test -s "$RUNTIME_ROOT/trust/ca.pem" || return
+  docker run --platform linux/amd64 -d --name "$RUN_NAME" --restart no --shm-size=256m --cpus=4 --memory=4g \
     -p 127.0.0.1:18991:8971 \
     -e NANEXUS_LIVE_UPSTREAM=http://127.0.0.1:18774 \
     -e NANEXUS_LIVE_TOKEN_FILE=/nanexus/private/live.token \
@@ -215,6 +261,7 @@ run_integrated() {
     --mount "type=bind,src=$ARTIFACTS/service-enable,dst=/etc/s6-overlay/s6-rc.d/user/contents.d/nanexus-private,readonly" \
     --mount "type=bind,src=$ARTIFACTS/pair,dst=/nanexus/pair,readonly" \
     --mount "type=bind,src=$RUNTIME_ROOT/private,dst=/nanexus/private,readonly" \
+    --mount "type=bind,src=$RUNTIME_ROOT/trust,dst=/nanexus/trust,readonly" \
     --mount "type=bind,src=$RUNTIME_ROOT/tls/fullchain.pem,dst=/nanexus/instance.pem,readonly" \
     --mount "type=bind,src=$RUNTIME_ROOT/config,dst=/config" \
     --mount "type=bind,src=$RUNTIME_ROOT/media,dst=/media/frigate" \
@@ -242,6 +289,14 @@ docker logs --tail 100 "$RUN_NAME"
 Confirm the exact requested official reference, Linux/amd64, native /init, health and UID1000 Host Entry readiness marker. Relate the target image ID to a fresh lookup of that exact reference on the same daemon; do not compare `.Image` directly with the registry digest or assume it is always a configuration digest. Platform-qualified and default inspections can expose different descriptor IDs. The build manifest records the default exact-reference inspection, not a universal container-ID equality. Docker health probes native API, not Nanexus functionality. Internal go2rtc API1984/RTSP8554 must remain consistent; no host publication needed. Open `https://127.0.0.1:18991`, manually accept your transport leaf, log in natively, inspect native UI and choose Live Monitor/Historical Verification. Preserve native session/camera authorization; anonymous static assets are normal, anonymous protected data is not. Native editor should load Monaco workers without404. Verify UI/API agree, not merely index200.
 
 With your authorized real signed stream, record actual current receipt freshness, mapping/session, states/reasons. UNKNOWN/DEGRADED/ACTIVE are observations, not installer targets; Live is structural/freshness policy, not real-time crypto trust. Historical requires matching originals/catalog/CA and a bounded product request that reaches the selected native Worker/OMS; report its true verdict/coverage, not a predetermined expected color. Missing real sample/trust/network is a distinct functional gap. Do not replay old captures or add fault injection.
+
+### First Historical request (later operator acceptance)
+
+After actual native recording is finalized and visible in Frigate's Catalog, open the existing **N → Historical Verification** entry. Choose an authorized camera, date and increasing UTC hour/minute interval of at most30 minutes, then click **Verify once**. The API can represent fractional seconds; the UI's minute controls are not an exact fractional-segment selector. Never change Catalog rows or file timestamps to match a chosen interval.
+
+The pending/completed plan is one chronological fixed-width wrapping block sequence, one block per actual recording. Hover shows that recording's Catalog start/end and explicit UTC/provenance; there is no block click or proportional-duration timeline. Equal widths do not mean equal durations or continuous signing coverage. Pale gray is pending, green positive scope, amber partial/indeterminate and red integrity-negative, as returned by the backend. Operational failures and unavailable media are not forged cryptographic failures. Cancellation waits for termination; a timed-out submission is not proof it was never accepted, so do not blindly resubmit. Record the actual result rather than seeking a particular color.
+
+The current window UI does not adopt an existing API-created job or promise durable result/evidence export or resume. Its terminal release/expiry concerns Nanexus memory only. Successful execution is not all-VALID signing or complete context: the first prior real API request returned AMBER with105 VERIFIED_SIGNING,15 INDETERMINATE,16 unresolved and zero unprocessed, while origin remained HOLD and continuity/coverage UNKNOWN. Prefix context was missing. That is evidence of a product execution, not an expected result for your source or a new browser acceptance of this candidate.
 
 Enable native recording/detection as in the template, adjusting dimensions only to your actual input. Verify finalized playable recordings and genuine completed CPU detector responses in fresh native stats; a live detector process or initialized inference speed alone is insufficient. No ordinary-user reliability/endurance claim follows from this prototype.
 
@@ -274,7 +329,7 @@ docker run --platform linux/amd64 -d --name "$RUN_NAME" --restart no --shm-size=
   "$FRIGATE_IMAGE"
 ```
 
-Verify native login/API/UI and retained recording playback. This preserves independent files; it is not DB byte restoration. Native migrations/retention still apply. Keep original evidence outside native writable mounts and do not mount /homeassistant or existing original databases: native prepare has legitimate migration behavior. No cleanup command here deletes your runtime media/config or accepted evidence.
+Verify native login/API/UI and retained recording playback. This preserves independent files; it is not DB byte restoration. Native migrations/retention still apply. Keep original evidence outside native writable mounts and do not mount /homeassistant or existing original databases: native prepare has legitimate migration behavior. No cleanup command here deletes your runtime media/config or accepted evidence. For uninstall, retain these operator-owned directories and detach integration mounts/environment as above; there is no automated media/database deletion procedure.
 
 ## Common failures and limits
 
@@ -284,8 +339,15 @@ Verify native login/API/UI and retained recording playback. This preserves indep
 - Missing worker/reference, alternate symlink, mode drift or changed bytes: verification fails. Never reseal manually to hide a replacement.
 - Missing acceptance: review manifest digest, use explicit accept, then verify with --require-accepted. Existing private fixed-hash installer is a different workflow and remains unchanged.
 - Nginx missing include/permission error: complete writable operational copy is required; inspect generated fragments against intended TLS/listen settings. Never relax canonical inventory.
+- Missing public CA or incompatible signing trust: supply the actual environment's public CA at trust/ca.pem, check the RO mount and UID1000 access; no private key or test-root fallback. Parsing a PEM does not prove chain compatibility.
 - Host Entry configuration/identity/TLS/permission failure: check placeholders, host/container Worker path translation, both selected hashes, UID1000 modes, readable original media and matching pinned leaf. Do not disable auth/pinning.
 - Pair executable blocked or ABI mismatch: inspect host noexec/architecture and actual pinned runtime library resolution. Source identity alone does not qualify arbitrary toolchains.
 - Live or Historical unavailable: distinguish native readiness, mapping/network/trust/media/metadata gaps from actual signing result; report honest state.
 
 Focused offline checks only: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_frigate_source_build.py -v`. Do not run broad test discovery or `tests/test_frigate_host_entry.py` against existing services. A separately reviewed clean build/runtime validation remains required before claiming this handoff works end to end.
+
+## Source and release boundaries
+
+Read [source license boundaries](source-license-boundaries.md) before sharing source or generated outputs. Existing mixed Apache/MIT and third-party notices remain; `LICENSE.nanexus` scope is not fabricated here. Frigate native branding is preserved; Nanexus is an independent integration, not an endorsed fork. Ship source only, not the locally built web/fonts/icons/ELF, official-image layers, credentials, CA, media/DB or private task evidence. Private-image/legacy packaging instructions are not this installation route.
+
+The current source candidate is uncommitted and cannot pass the builder's reviewed-commit gate as a release yet. Master source review/checkpoint and a separately authorized clean build/runtime gate must precede any working-install claim. Static syntax, mount and template consistency do not establish runtime health, UI rendering, inference or signing results. Native cleanup warnings and unresolved R2 failure-isolation limits remain documented in the [support contract](support-matrix.md); no HA/production guarantee follows.

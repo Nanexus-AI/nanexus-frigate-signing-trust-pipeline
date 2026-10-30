@@ -12,7 +12,7 @@ go2rtc:
   rtsp:
     listen: "127.0.0.1:8554"
   streams:
-    signed_source: rtsp://REPLACE_GATEWAY_HOST:REPLACE_PORT/REPLACE_SIGNED_PATH
+    signed_source: rtsp://REPLACE_SIGNING_SOURCE_HOST:REPLACE_PORT/REPLACE_SIGNED_PATH
 detectors:
   cpu:
     type: cpu

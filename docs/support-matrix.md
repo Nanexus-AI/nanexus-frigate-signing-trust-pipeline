@@ -1,68 +1,26 @@
-# Live Signing Status support matrix
+# M1 support and acceptance contract
 
-Validated profile: **Frigate v0.18.0 / 0.18.0-77a66e7**, source commit
-`77a66e75c61862b048a07c1295877f4b31343504`, with the separate Nanexus
-read-only relay and desktop UI patches. This is a version-specific development
-integration, not an installation package or a claim of support for other Frigate
-versions.
+Target: **M1 Frigate-first Source-Only Technical Prototype Release**, native Linux amd64, operator UID/GID1000 and Frigate **0.18.2-cfa08c5**, upstream `cfa08c56b23d23280c3d0a218e5a43182c97445b`.
 
-| Desktop Live surface | Validated behavior |
-| --- | --- |
-| Default multi-camera grid | One status per tile, using its actual camera and selected stream |
-| Draggable/custom grid | Same exact playback identity and shared status delivery |
-| Single-camera view | Persisted selected stream; stream changes begin UNKNOWN |
-| Digital zoom/pan | Status stays outside the transformed media layer |
-| DOM/container fullscreen | Status stays inside the fullscreen ancestor |
+Official image: `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a`. Use the [source installation guide](frigate-source-build.md); there is no distributed derivative image, private artifact download or generalized installer. Build/selection/Host Entry and direct mounts remain the installation architecture.
 
-The visible label is **Signing Status: ACTIVE**, **Signing Status: DEGRADED**,
-or **Signing Status: UNKNOWN**. ACTIVE means recent supported signing evidence
-was observed. DEGRADED means signing evidence is overdue while media continues.
-UNKNOWN means status is unavailable or evidence is insufficient. These are Live
-observation states; they do not assert Historical cryptographic validity.
+| Surface | Contract | Evidence and pending gate |
+|---|---|---|
+| Local source build | Pinned upstream/archive/image, Node20/compiler profile, complete frontend and Monaco handling, paired Worker/OMS, explicit manifest acceptance | Earlier independent source build G1–G8 passed. The changed source candidate has static review only and needs a separately authorized build |
+| Native Frigate integration | Native /init, s6, authentication/TLS, three individual API overlays, complete operational nginx copy, non-root Host Entry | Earlier official-image smoke passed. No changed-candidate runtime acceptance yet |
+| Entry/navigation | Existing Nanexus N menu with Live Monitor and Historical Verification; Frigate theme and native branding retained | Earlier compiled entry/form rendering passed; navigation/Live source is unchanged here |
+| Live Monitor | Authorized enabled non-replay camera tiles, count-based desktop grid/pagination, still images with object-fit:contain; distinct camera/stream/context status keys | Prior three-channel real-source API/UI validation passed on the older private image. Clean-build smoke only exercised startup UNKNOWN/disabled-camera rendering. Current implementation shares a SigningClient with separate keyed subscriptions; separate client instances per tile are not established |
+| Still-image loading | One GET latest.jpg?store=0 per displayed camera in a mounted monitor session, no image polling/retry, no video elements in tiles | Existing source preserved; status API polling is separate from image loading |
+| Historical UI | One authorized camera/UTC interval up to30 minutes; one pending/completed block per actual recording, chronological fixed-width wrapping sequence, legend and hover-only Catalog ranges; no block click/timeline hierarchy | Grid is a new bounded source correction, not yet built or browser-tested. Actual current-build browser submission→result remains pending |
+| Historical backend | Native Catalog selects actual originals through a RO view; selected accepted Worker loads its paired OMS and uses one operator public CA | Earlier actual API job completed with AMBER:105 VERIFIED_SIGNING,15 INDETERMINATE,16 unresolved,zero unprocessed; prefix context incomplete. No raw certificate-origin verdict or complete continuity/coverage claim |
+| Lifecycle/recovery | Fresh isolated target only, normal stop/recreation, native-only recovery retaining external config/media/TLS | Earlier private lifecycle precedent passed. Corrected source guide's operator recreation/recovery gate remains pending |
 
-The browser uses Frigate's same-origin authenticated, camera-authorized endpoint.
-Normal password login and native browser-cookie refresh were exercised in the
-local desktop Chromium reference. The companion remains private. Transport
-failure displays UNKNOWN without interrupting playback.
+Live ACTIVE means recent supported structural evidence under explicit freshness/media-silence/observation policy. DEGRADED means evidence is overdue while media progresses within policy limits. UNKNOWN means no current supported determination, including startup, unsupported evidence, stale delivery, mapping or transport uncertainty. None is real-time cryptographic verification, signer/camera health, replay freedom or trust-anchor validation.
 
-The shared browser client keys entries by camera, selected stream and playback
-context (`grid` for both grid layouts; `single` for a single camera). It polls no
-more often than once per second after a request completes, with two concurrent
-requests and at most sixteen active identities. This follows the existing Live
-observation timescale without observing media in the browser. A two-second
-request timeout and 2.5-second delivery expiry bound stale display independently
-of backend signing freshness. Excess identities remain UNKNOWN; unused entries
-are removed when their last consumer unsubscribes.
+Historical pending is not a verdict. GREEN is positive scope, AMBER partial or indeterminate, RED integrity-negative, using established backend findings. Catalog time, file count and equal-width blocks are not authenticated signing time, equal durations or continuous coverage. Missing media, gaps, resource limits and infrastructure errors remain distinct from signing findings. Verification concerns original retained media, not exported MP4 authenticity. Current window results are volatile; no UI adoption of an API-created job, durable archive, resume or evidence-export promise.
 
-Current runtime acceptance used **preserved real signed C210/Gateway H.264
-replay**, presented through two local camera tiles and two stream aliases.
-Stream switching exercises distinct configured rendition mappings of that replay;
-it does not qualify separate hardware streams. Fresh hardware-chain
-qualification and deployment/release acceptance are separate work.
+One operator-supplied public CA is mounted RO at `/nanexus/trust/ca.pem`; no test CA or signing private key is installed. Sources may be a compatible standards-compliant signer or optional Gateway within the supported H.264/evidence subset, not every ONVIF device/profile. Credential-bearing RTSP URLs are unsupported by Host Entry.
 
-Deferred and unsupported: Mobile-specific UI, Birdseye, native Picture-in-Picture,
-native video fullscreen (including iOS native fullscreen/overlay), debug/settings
-previews, and replay/playground. This desktop Live profile makes no claims for
-Historical UI, Review verification, EventView, Motion Search, Explore, snapshots,
-batch workflows or exported-file verification.
+Prototype limits: fixed version/architecture/compiler profile/UID, loopback HTTPS and manual TLS renewal; no mobile, HA, enterprise management, migration of existing deployments or multi-CA administration. Earlier R2 native-recording isolation failed with a43.175-second gap; a short no-fault control was clean and later evidence narrowed an upstream failure correlate without proving its trigger. Production resilience and failure isolation are not qualified. Known native startup warnings and shutdown logging diagnostics remain recorded, not repaired by this change.
 
-## Historical Verification — desktop Review/Export
-
-The same **Frigate v0.18.0 / validated profile `0.18.0-77a66e7`** supports:
-
-- Desktop `/review`, one selected recording camera, and the existing Export dialog.
-- **Custom** selection of explicit start/end times, with the same rounded Unix-second bounds submitted by native Export. Requests are half-open `[start, end)`.
-- An optional **Verify retained signed recording** action, independent of native Export submission and success.
-- Durable companion verification jobs, restoration of the latest job for a selected range through Frigate's per-user browser storage, and evidence summary/download through camera-authorized routes.
-
-Historical Verification applies to the **original retained signed recording material corresponding to the selected range**. It does **not** verify the exported MP4, assert byte identity with it, or label that file authentic. Exported-file verification needs a separate future artifact-binding contract.
-
-Job lifecycle is separate from Verification Result (`VALID`, `PARTIAL`, `INVALID`, `UNKNOWN`). Metadata Coverage (`FULL`, `NOT_FULL`, `INDETERMINATE`), Requested-Range Coverage (`FULL`, `INDETERMINATE`), actual verification context, and evidence are displayed separately. FULL metadata does not establish complete verification context. Infrastructure failures do not become media INVALID; queued/running jobs have no media verdict.
-
-The companion retains jobs and evidence. Existing Frigate per-user IndexedDB stores the latest association for each camera/range, bounded to sixteen associations. Clearing that browser storage removes its restoration references. An explicit new verification replaces that range's displayed job with a new execution; refresh/reopen only queries the saved job. Terminal jobs stop periodic polling. Native export status is queried separately, including its durable completed Export record when the queued-job record is unavailable.
-
-Reference acceptance used preserved real signed C210/Gateway H.264 replay retained by Frigate. It exercised an actual completed INVALID result with FULL metadata and INDETERMINATE requested-range coverage, plus a recording-gap UNKNOWN result with NOT_FULL metadata. Neither outcome was manufactured by altering media. All four verdict displays are covered by focused tests. Normal password authentication, independent native export, evidence view/download, dialog reopen, page refresh/window reopen, companion outage and completed-job restoration after companion restart were exercised. Fresh hardware qualification, a full browser-process restart, and other browser engines were not qualified by this run.
-
-Historical workflows deferred/unsupported: all Mobile Export; EventView and ReviewCard quick export; batch and multi-camera export; Motion Search; Explore clip/download; retrospective verification of existing exports; snapshots; continuous/background verification; automatic per-segment annotations; exported-file verification; standalone Historical dashboards. No Historical feature is enabled at those entry points.
-
-See the [bounded Historical transport](historical-transport.md) for the private deployment boundary and response limits.
+The root Apache license does not override MIT additions/upstream or artwork/font/trademark terms. See [source license boundaries](source-license-boundaries.md). Publication, final license mapping, branding/presentation clearance and operator acceptance are separate gates. Historical 0.18.0 support claims and older durable Review/Export workflows are not extended to this0.18.2 window interface.

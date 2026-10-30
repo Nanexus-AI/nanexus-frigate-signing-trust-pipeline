@@ -52,23 +52,9 @@
 /* Ordinal recording strips; never a time-scaled timeline. */
 .nx-file-grid {display:flex;flex-wrap:wrap;gap:1px;margin:8px 0;max-width:100%;align-items:center;}
 .nx-file-block {display:block;flex:0 0 3px;width:3px;height:16px;padding:0;border:0;border-radius:1px;overflow:hidden;color:transparent;font-size:0;background:#c5ced8;}
-.nx-file-block:focus-visible {outline:2px solid #2563eb;outline-offset:1px;}
 .nx-file-block[data-finding=GREEN] {background:#2f9e62;}
 .nx-file-block[data-finding=AMBER] {background:#d9a322;}
 .nx-file-block[data-finding=RED] {background:#d45b5b;}
-.nx-gap-block {display:block;flex:0 0 7px;width:7px;height:16px;padding:0;border:0;border-radius:1px;background:#6d8294;font-size:0;color:transparent;}
-.nx-gap-block:focus-visible {outline:2px solid #2563eb;outline-offset:1px;}
-.nx-coverage {position:relative;display:flex;width:100%;height:18px;margin:8px 0 4px;overflow:hidden;}
-.nx-cov-interval {position:absolute;top:0;height:18px;z-index:1;}
-.nx-coverage span {display:block;height:18px;min-width:0;flex-shrink:1;}
-.nx-cov-outside {background:#8d8d8d;}
-.nx-cov-gap {background:#6d8294;}
-.nx-cov-undiscovered {background:#e7ebef;}
-.nx-cov-recording,.nx-cov-pending {background:#c5ced8;}
-.nx-cov-green {background:#2f9e62;}
-.nx-cov-amber {background:#d9a322;}
-.nx-cov-red {background:#d45b5b;}
-#historical-coverage-note {margin:0 0 8px;font-size:12px;}
 .nx-legend {display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px;}
 .nx-error {color:#b42318;}
 @media (prefers-color-scheme: dark) {
@@ -77,7 +63,6 @@
   #nanexus-dashboard .nx-workflow .nx-secondary {color:#e8eaed;}
   .nx-error {color:#ffb4b4;}
   .nx-file-block {background:#d5dde6;}
-  .nx-gap-block {background:#7f97ab;}
   .nx-cov-outside {background:#767676;}
   .nx-cov-gap {background:#7f97ab;}
   .nx-cov-undiscovered {background:#2a3138;}

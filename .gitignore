@@ -1,2 +1,37 @@
 __pycache__/
 *.py[cod]
+
+# Local research, operator configuration and credentials are not release inputs.
+/.local/
+/.codex/config.toml
+/.aws/
+/nanexus-runtime/
+/runtime/
+/private/
+/trust/
+/tls/
+/secrets/
+/media/
+/recordings/
+/state/
+/scratch/
+*.pem
+*.key
+*.token
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Builds stay outside the checkout; also protect accidental local outputs.
+/build/
+/dist/
+/source-output/
+/accepted-builds/
+/artifacts/
+node_modules/
+*.o
+*.a
+*.so
+*.so.*
