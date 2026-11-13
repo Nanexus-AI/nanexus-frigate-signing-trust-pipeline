@@ -91,7 +91,14 @@ while (!status.textContent.includes("Execution completed") && !status.textConten
 const coverage = window.document.getElementById("historical-coverage");
 if (!coverage.hidden) throw new Error("missing live-session query_coverage was masked by a fabricated timeline");
 if (coverage.querySelector(".nx-cov")) throw new Error("coverage segments were invented without query_coverage");
-if (!root.querySelector(".nx-file-grid").hidden) throw new Error("file grid appeared when coverage was absent");
-if (root.querySelector(".nx-file-block")) throw new Error("ordinal file strip substituted for missing coverage");
+if (root.querySelector(".nx-file-grid").hidden) throw new Error("existing ordinal fallback was lost without optional coverage");
+const blocks = root.querySelectorAll(".nx-file-block");
+if (blocks.length !== 1 || blocks[0].dataset.recording !== "rec-a" || blocks[0].dataset.finding !== "GREEN") {
+  throw new Error("fallback changed the actual recording or backend finding");
+}
+if (!blocks[0].title.includes("Not authenticated signing times") || !blocks[0].title.includes("[100, 110)")) {
+  throw new Error("fallback lost raw Catalog timestamp provenance");
+}
+if (!root.textContent.includes("Recording sequence (time coverage unavailable).")) throw new Error("fallback meaning was not labelled");
 unmount();
 console.log("historical-no-coverage: pass");

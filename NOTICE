@@ -135,7 +135,7 @@ F03 src/nanexus_trust/frigate/live_frontend_overlay.py
   A3: project entry-patch/hash/write logic and Nanexus entry import/call; exclude U4 and retained context in ENTRY_INSERT.
 
 F04 src/nanexus_trust/frigate/navigation_overlay.py
-  SHA256 02c0f5ddcda5552e0ab9298bd25ff655a638704c28c59f15dcbab931a2de4996
+  SHA256 d78053a3559864d0172a8696380c16c413ce6de596f7c08676777e1ca821becd
   A4: project nginx-patch/hash/asset logic and Nanexus markup; exclude U5–U7 and retained context in MAP_INSERT, BODY_INSERT and location replacement strings.
 
 F05 src/nanexus_trust/frigate/live_frontend/web/src/api/live-signing.ts
@@ -167,15 +167,15 @@ F11 src/nanexus_trust/frigate/navigation_locations.nginx
   A11: project Nanexus proxy-route configuration arrangement; no ownership of nginx software, standard directives or included external files is asserted.
 
 F12 ui/nanexus/historical.js
-  SHA256 640d8167fb2eda61a408ad067c75d95fed9e66cf9fbc782538ef911ac14f941b
-  A12: project Historical DOM/calendar/query/progress/status-grid implementation, including project predecessor UI contributions; no grant over any external implementation is implied.
+  SHA256 3f7182d7f09c11948ba695b3ef9e60f0aa897937f38dff1eb1c3cf3ca69c8bf4
+  A12: project Historical DOM/calendar/query/progress/timeline and fallback-grid implementation, including project predecessor UI contributions; no grant over any external implementation is implied.
 
 F13 ui/nanexus/navigation-live.css
   SHA256 c24c246f23ee999d6bad22306833a14a4b086c3ec287c43660f1c2f47b6301e2
   A13: project flyout/Live/theme CSS and source-defined geometry; any valid earlier MIT permission remains available.
 
 F14 ui/nanexus/navigation.css
-  SHA256 75cd27523831c4b3073fe91ec4b03d454f2882f4ce3cbc2300f173e7a20e506d
+  SHA256 4627d45367e28d4b0b471ebc2561260ade38541aca15fbb207d0a44c1a6151e4
   A14: project navigation/Historical layout and finding styles; system-font references/common syntax are not an exclusive Nanexus property claim.
 
 F15 ui/nanexus/navigation.js

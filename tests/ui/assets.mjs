@@ -11,8 +11,8 @@ export const uiDir = join(here, "../../ui/nanexus");
 export const ACCEPTED = {
   "navigation.js": "fd6ecdc738bb72fc4d6029361ac6424f7f3b3ad479fda2a24ff080a1c11451d9",
   "navigation-live.css": "c24c246f23ee999d6bad22306833a14a4b086c3ec287c43660f1c2f47b6301e2",
-  "historical.js": "b23512a112527b2180687d42b7886d983edd78e284539ff2ef8210acafecdd0d",
-  "navigation.css": "997c3e01dc2ad98b56e2ac15099c647c4891f93c48efe1a7a884e457ca7e3b22",
+  "historical.js": "3f7182d7f09c11948ba695b3ef9e60f0aa897937f38dff1eb1c3cf3ca69c8bf4",
+  "navigation.css": "4627d45367e28d4b0b471ebc2561260ade38541aca15fbb207d0a44c1a6151e4",
 };
 
 export function ui(name) {

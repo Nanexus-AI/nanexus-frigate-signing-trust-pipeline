@@ -55,6 +55,16 @@
 .nx-file-block[data-finding=GREEN] {background:#2f9e62;}
 .nx-file-block[data-finding=AMBER] {background:#d9a322;}
 .nx-file-block[data-finding=RED] {background:#d45b5b;}
+.nx-coverage {position:relative;display:flex;width:100%;height:18px;margin:8px 0 4px;overflow:hidden;}
+.nx-cov-interval {position:absolute;top:0;height:18px;z-index:1;}
+.nx-coverage span {display:block;height:18px;min-width:0;flex-shrink:1;}
+.nx-cov-outside {background:#8d8d8d;}
+.nx-cov-gap {background:#6d8294;}
+.nx-cov-undiscovered {background:#e7ebef;}
+.nx-cov-recording,.nx-cov-pending {background:#c5ced8;}
+.nx-cov-green {background:#2f9e62;}
+.nx-cov-amber {background:#d9a322;}
+.nx-cov-red {background:#d45b5b;}
 .nx-legend {display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px;}
 .nx-error {color:#b42318;}
 @media (prefers-color-scheme: dark) {
