@@ -4,12 +4,12 @@ This guide builds local components from source and mounts them into the **unchan
 
 Supported binding only:
 
-- D4 technical reference commit `df385a768656a4cd245913ebd724ae31c5e1e2c8`, with required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`. A later documentation/source handoff must name its own reviewed full commit; never guess a release ref.
+- Latest local G8 technical reference commit `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`, with required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`. A later documentation/source handoff must name its own reviewed full commit; never guess a release ref.
 - Frigate `0.18.2-cfa08c5`, upstream `cfa08c56b23d23280c3d0a218e5a43182c97445b`.
 - Official runtime `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a`.
 - Official source archive SHA256 `fb5a04196c4be1dd332d4762e692ebb51fb5e949fafc2f3159830d44583ab005`.
 
-No private integrated image, retained compiled frontend/pair, private cache or `.local` experiment is an input. The technical baseline completed an independent Node20 build, local G1–G8 artifact acceptance and native official-image checks. Bounded browser validation demonstrated login/navigation, synthetic Historical wrapping and synthetic camera isolation. D5 exercised real three-camera Live and terminal Historical paths on the prior grid. The restored timeline has focused fixture validation and owner visual approval; independent operator installation/lifecycle and broader UI coverage remain separate gates. These instructions are a pre-publication handoff, not proof of a complete end-user qualification. Do not use the legacy packaging service.
+No private integrated image, retained compiled frontend/pair, private cache or `.local` experiment is an input. The technical baseline completed an independent Node20 build, local G1–G8 artifact acceptance and native official-image checks. Bounded browser validation demonstrated login/navigation, synthetic Historical wrapping and synthetic camera isolation. D5 exercised real three-camera Live and terminal Historical paths on the prior grid. The restored timeline subsequently passed focused fixture validation, owner visual approval and one independent clean Build/G1–G8 acceptance at that latest source reference. It was not rerun through the full D5 E2E. Independent ordinary-user installation/lifecycle and broader UI coverage remain separate gates. These instructions are a pre-publication handoff, not proof of a complete end-user qualification. Do not use the legacy packaging service.
 
 ## 1. Prepare the developer environment
 
@@ -51,15 +51,15 @@ Python3.11+ with actual tar data-filter support is required. Allow disk for full
 
 ## 2. Acquire reviewed public sources and official upstream inputs
 
-Use a full Git clone from the authorized handoff containing the paired builder's required ancestry, not a source ZIP or shallow HEAD. The source origin and reviewed commit must be supplied explicitly before publication or a private acceptance handoff; no repository is created by this guide. Set `PIPELINE_ROOT` to that clean clone. This tool must itself be tracked in the reviewed commit; an uncommitted implementation checkout is intentionally not build-admitted.
+Use a full Git clone of [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline) containing the paired builder's required ancestry, not a source ZIP or shallow HEAD. Repository access depends on visibility and your permissions; these commands do not create a repository. Set `PIPELINE_ROOT` to the clean clone. The builder must be tracked in the reviewed commit; an uncommitted implementation checkout is intentionally not build-admitted.
 
-Before publication the master/operator must supply an **authorized full-history Git origin** and an **exact reviewed handoff commit** through an approved private channel. No public repository URL or release currently exists. The frozen technical candidate is not automatically a license to share source or generated outputs. Do not create a repository or copy the entire development workspace. The handoff must include this guide (or explicit approved errata); a docs-only checkpoint may have a different HEAD from the frozen technical candidate.
+Use the origin below and the **exact full publication-source commit recorded in the approved handoff**. `main` is a moving branch, not an immutable acceptance identity. The full reviewed SHA is supplied alongside the handoff rather than embedded as this document's own self-referential commit hash. The accepted technical build remains sourced from `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`; a documentation/publication checkpoint is distinct and does not independently inherit G8 acceptance. A new operator build records and admits its own manifest. No release tag, compiled package or permission to redistribute generated outputs is implied.
 
 ```sh
-SOURCE_ORIGIN=REPLACE_WITH_AUTHORIZED_FULL_GIT_ORIGIN
+SOURCE_ORIGIN=https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline.git
 REVIEWED_SOURCE_COMMIT=REPLACE_WITH_REVIEWED_FULL_HANDOFF_COMMIT
 PIPELINE_ROOT=/absolute/path/to/fresh-operator-clone
-# Substitute the supplied origin/ref before running; full clone, no --depth/source ZIP.
+# Supply the reviewed full handoff SHA before running; full clone, no --depth/source ZIP.
 git clone --no-local "$SOURCE_ORIGIN" "$PIPELINE_ROOT"
 git -C "$PIPELINE_ROOT" checkout --detach "$REVIEWED_SOURCE_COMMIT"
 cd "$PIPELINE_ROOT"
@@ -386,4 +386,4 @@ Focused offline checks only: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest disc
 
 Read [source license boundaries](source-license-boundaries.md) before sharing source or generated outputs. The current Apache/MIT contribution schedule and complete retained terms are in NOTICE and the linked boundaries document; a separate `LICENSE.nanexus` is not required. Frigate native branding is preserved; Nanexus is an independent integration, not an endorsed fork. Ship source only, not the locally built web/fonts/icons/ELF, official-image layers, credentials, CA, media/DB or private task evidence. Private-image/legacy packaging instructions are not this installation route.
 
-The frozen technical baseline is committed and locally G8 accepted, with bounded native integration and synthetic browser evidence. Later source outputs require their own reviewed manifest and G8 acknowledgment; acceptance is not inherited from the frozen technical reference. A reviewed handoff ref and the comprehensive human-operated real-source E2E gate must precede an ordinary-user end-to-end claim. Preserve the old accepted manifest/acceptance; a fresh build needs its own reviewed identities and local acknowledgment. Native cleanup warnings and unresolved R2 failure-isolation limits remain documented in the [support contract](support-matrix.md); no HA/production guarantee follows.
+The latest frozen technical reference is committed and locally G8 accepted. D5 completed real three-camera functional E2E on the preceding D4 frontend; the restored Historical timeline received separate focused browser/owner approval and clean-build acceptance, without another real-source E2E. Later source outputs require their own reviewed manifest and G8 acknowledgment; acceptance is not inherited from the frozen technical reference. A reviewed handoff and independent ordinary-user installation/recovery remain necessary before claiming that release qualification. Preserve the old accepted manifest/acceptance; a fresh build needs its own reviewed identities and local acknowledgment. Native cleanup warnings and unresolved R2 failure-isolation limits remain documented in the [support contract](support-matrix.md); no HA/production guarantee follows.

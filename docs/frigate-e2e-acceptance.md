@@ -1,6 +1,8 @@
-# One integrated human-operated acceptance
+# Integrated human-operated acceptance: evidence and procedure
 
-This is a **future authorized test**, not an experiment performed by these instructions. Use the [operator guide](frigate-source-build.md) and [support contract](support-matrix.md). The frozen technical reference is source `8b8644a3b9e627a392166c398ab5ad1fca8d2de1`, Frigate `0.18.2-cfa08c5` and the exact official image pinned in that guide. Local G8 and synthetic browser evidence do not replace this real-source acceptance. Publication remains withheld.
+D5 completed bounded real three-camera functional E2E using source `df385a768656a4cd245913ebd724ae31c5e1e2c8` and the D4 frontend. Actual Live/stills, native recordings/playback and terminal Historical execution were observed; the owner reviewed Live from Windows 11. Historical presentation remained open at that stage. The subsequently restored timeline at `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5` passed focused browser checks, owner visual approval and its own clean Build/G1–G8, without repeating D5. The [README validation account](../README.md#what-has-actually-been-validated) separates those stages and records actual Historical findings and limitations.
+
+The following retained procedure is a reference for a separately authorized operator acceptance session, not a request to repeat D5. Independent ordinary-user installation/recreation/recovery remains an open release dimension. Use the [operator guide](frigate-source-build.md) and [support contract](support-matrix.md). Frigate compatibility remains `0.18.2-cfa08c5` with the exact official image pinned in the guide. No new runtime action or publication is authorized by this document.
 
 ## Approve inputs once
 
