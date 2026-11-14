@@ -10,7 +10,7 @@ Source permissions and trademark authorization are separate. Neither this source
 |---|---|
 |Nanexus companion/product, tools, docs and tests|Root Apache-2.0 LICENSE and product NOTICE, subject to the portion-specific exceptions below; no general relicensing of third-party code|
 |The 15 integration paths below|Apache-2.0 for the identified later project contributions; retained MIT for legacy portions and any valid earlier grants; Frigate MIT for verified external portions|
-|Eight Toolkit-derived files under src/nanexus_trust/historical_v2/videotrust/|Existing Apache terms and exact original paths/commit678d8135f738a813831898388266842ede90c5e7 in NOTICE; no other Toolkit source bundled|
+|Eight Toolkit-derived files under src/nanexus_trust/historical_v2/videotrust/|Existing Apache terms and exact original paths/commit 678d8135f738a813831898388266842ede90c5e7 in NOTICE; no other Toolkit source bundled|
 |third_party/media-signing-framework/|ONVIF MIT LICENSE, source headers and PROVENANCE at r25.12.6/cf7785ab993c18d921094e8e505c2c34a1350f28, including TLV/Meson modifications; not Nanexus Apache|
 |Copied Frigate fixtures, schema and overlay excerpts|Full Frigate MIT copyright/permission/disclaimer in NOTICE; copied portions remain external regardless of the integration's own-contribution license|
 

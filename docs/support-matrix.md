@@ -8,6 +8,8 @@ Official image: `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e
 
 The [source-build guide](frigate-source-build.md) is the only current installation procedure. Operators build and explicitly admit their own frontend and Worker/OMS pair, then mount assets into the official image. No derivative image or prebuilt Nanexus package is supplied.
 
+The [installation procedure](frigate-source-build.md#2-acquire-reviewed-sources-and-official-upstream-inputs) defaults to immutable technical source `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`. This identifies build inputs, not a distributed binary; every new local output requires its own manifest review and acceptance. A later documentation commit is not a newly G8-qualified technical build.
+
 ## Supported behavior
 
 | Surface | Supported behavior and limits |

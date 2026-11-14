@@ -59,7 +59,7 @@ Native ingest and Host Entry use separate source connections. Live observations 
 
 ## Related Nanexus Projects
 
-- **[Nanexus Media Signing Gateway](https://github.com/Nanexus-AI/nanexus-media-signing-gateway)** — an independent, optional source that adds ONVIF Media Signing to compatible H.264 camera streams. An existing three-channel Gateway deployment supplied the signed streams used in the real D5 E2E.
+- **[Nanexus Media Signing Gateway](https://github.com/Nanexus-AI/nanexus-media-signing-gateway)** — an independent, optional source that adds ONVIF Media Signing to compatible H.264 camera streams. An existing three-channel Gateway deployment supplied the signed streams used in the three-camera real-source functional validation.
 - **[Nanexus Video Trust Toolkit](https://github.com/Nanexus-AI/nanexus-video-trust-toolkit)** — a separately developed verification toolkit from which selected Historical C++ components are derived. Their exact source attribution is retained in [NOTICE](NOTICE).
 
 Nanexus-owned code in both projects uses Apache-2.0; their third-party components retain separate terms. **You do not need to install all three projects.** Gateway is optional when another compatible signed source is available, and the Pipeline source already includes the selected Toolkit-derived components.
@@ -81,7 +81,7 @@ Live images load once per displayed camera in a mounted monitor session; image r
 
 Use the [operator build and installation guide](docs/frigate-source-build.md) for the complete procedure. **M1 supplies source, not a derivative container image or prebuilt frontend/Worker/OMS package.** Operators obtain the official pinned Frigate source/image and build their own integration assets.
 
-Source repository: [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline). Access depends on repository visibility and permissions. For an immutable checkout, use the **full reviewed publication-source commit** recorded in the handoff; `main` is a moving branch. That documentation/source checkpoint is distinct from the accepted technical build source.
+Source repository: [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline). Access depends on repository visibility and permissions. The installation guide selects **`e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`**, the immutable accepted technical source, as its default. Use the guide's full-clone and detached-checkout commands; `main` is a moving branch. Each locally generated build requires its own manifest review and explicit acceptance.
 
 1. **Acquire and build the reviewed source.** Follow the guide's prerequisites and existing Builder workflow. Review your output manifest, explicitly accept that local build and run `verify --require-accepted`.
 2. **Configure private runtime inputs.** Supply authorized signed streams, TLS, credentials and the public signing trust CA. Use the existing Selector to choose the built Worker/OMS pair and configure Host Entry.
@@ -114,7 +114,7 @@ None of these is a cryptographic verdict, a certificate-trust result or a camera
 
 ## What has actually been validated
 
-**Real three-camera D5 acceptance:** three physical cameras through an existing signing Gateway, actual Live stills/statuses, native retained recordings and playback samples, and Windows 11 owner review of Live.
+**Three-camera real-source functional validation:** three physical cameras through an existing signing Gateway, actual Live stills/statuses, native retained recordings and playback samples, and Windows 11 owner review of Live.
 
 Two separate Historical runs were observed: the recorded UI run completed **13/13 files, all AMBER**; a separate **owner-observed run completed 74/74 files: 72 GREEN and 2 AMBER**. Actual Worker/OMS execution and native recording Catalog/database integration were evidenced. The 13-file response also carried the fixed conservative fields described above. Completion is not an all-VALID result, and the runs must not be merged. The [support matrix](docs/support-matrix.md#recorded-validation-observations) distinguishes the recorded and owner-observed evidence. The illustrations above are not test results.
 

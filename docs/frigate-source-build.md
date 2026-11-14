@@ -4,7 +4,7 @@ This guide builds local components from source and mounts them into the **unchan
 
 Supported binding only:
 
-- Accepted technical build source `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`, with required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`. The first Private publication checkpoint is `e38562865d87674b3f24d35735fd1a570b5f72fb`. Later documentation checkpoints have their own full source identity; none independently inherits G8 acceptance. Use the reviewed full commit supplied for your installation.
+- Default immutable technical source `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`, containing the Builder and required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`.
 - Frigate `0.18.2-cfa08c5`, upstream `cfa08c56b23d23280c3d0a218e5a43182c97445b`.
 - Official runtime `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a`.
 - Official source archive SHA256 `fb5a04196c4be1dd332d4762e692ebb51fb5e949fafc2f3159830d44583ab005`.
@@ -28,7 +28,7 @@ Package availability is not guaranteed. Both `/usr/bin/gcc` and `/usr/bin/g++` m
 
 **Node 20 is a frozen-build compatibility dependency and is [end-of-life](https://nodejs.org/en/about/eol).** It no longer receives normal upstream security maintenance. Use a dedicated disposable build environment with no production secrets and only the access needed to obtain reviewed inputs. npm installation/postinstall executes upstream dependency scripts; isolation is required even though output is used locally. Do not deploy Node as a runtime service or silently upgrade its major version to bypass this profile. A supported-toolchain migration requires separate code/build qualification.
 
-Your administrator supplies Node20 with its npm executable on PATH; this guide does not install or upgrade it. If installed outside the system PATH, set `NODE20_BIN` to that installation's `bin` directory and run `export PATH="$NODE20_BIN:$PATH"` in this shell. Record actual versions, not a developer cache location. No Compose or Buildx is required. Initial acquisition requires authorized access to the source handoff, official Node/package origins, GitHub codeload, GHCR and the npm registry/dependency origins used by upstream postinstall scripts. Offline/private-cache availability is not assumed.
+Your administrator supplies Node20 with its npm executable on PATH; this guide does not install or upgrade it. If installed outside the system PATH, set `NODE20_BIN` to that installation's `bin` directory and run `export PATH="$NODE20_BIN:$PATH"` in this shell. Record actual versions, not a developer cache location. No Compose or Buildx is required. Initial acquisition requires access to the source repository, official Node/package origins, GitHub codeload, GHCR and the npm registry/dependency origins used by upstream postinstall scripts. Offline/private-cache availability is not assumed.
 
 Use the same Bash session for the following commands. Stop on errors and keep operator-created files private; the builder sets its build subprocess umask explicitly to022 for the existing paired layout. Check before building:
 
@@ -55,13 +55,15 @@ Python3.11+ with actual tar data-filter support is required. Allow disk for full
 
 Use a full Git clone of [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline) containing the paired builder's required ancestry, not a source ZIP or shallow HEAD. Repository access depends on visibility and your permissions; these commands do not create a repository. Set `PIPELINE_ROOT` to the clean clone. The builder must be tracked in the reviewed commit; an uncommitted implementation checkout is intentionally not build-admitted.
 
-Use the origin below and the **exact full publication-source commit recorded in the source handoff**. `main` is a moving branch, not an immutable acceptance identity. The full reviewed SHA is supplied alongside the handoff rather than embedded as this document's own self-referential commit hash. The accepted technical build remains sourced from `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`; a documentation/publication checkpoint is distinct and does not independently inherit G8 acceptance. A new operator build records and admits its own manifest. No release tag, compiled package or permission to redistribute generated outputs is implied.
+The commands below select the immutable accepted technical source **`e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`**. It contains the tracked Builder, required ancestry and runtime templates. Keep this guide open while following the procedure: the detached technical checkout can contain older documentation; use this guide for the current instructions. No private handoff or prebuilt artifact is needed to identify this source.
+
+You may explicitly select another reviewed full 40-character commit if it contains the required Builder/ancestry and clean build inputs. Set `REVIEWED_SOURCE_COMMIT` before checkout and pass the resulting actual HEAD to the Builder. Do not substitute moving `main` or invent a release tag. Every new build records its own source and artifact identities and requires its own manifest review and local acceptance; using the technical reference does not make new output automatically accepted.
 
 ```sh
 SOURCE_ORIGIN=https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline.git
-REVIEWED_SOURCE_COMMIT=REPLACE_WITH_REVIEWED_FULL_HANDOFF_COMMIT
+REVIEWED_SOURCE_COMMIT=e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5
 PIPELINE_ROOT=/absolute/path/to/fresh-operator-clone
-# Supply the reviewed full handoff SHA before running; full clone, no --depth/source ZIP.
+# Full clone preserves required ancestry; do not use --depth or a source ZIP.
 git clone --no-local "$SOURCE_ORIGIN" "$PIPELINE_ROOT"
 git -C "$PIPELINE_ROOT" checkout --detach "$REVIEWED_SOURCE_COMMIT"
 cd "$PIPELINE_ROOT"
@@ -406,4 +408,4 @@ These unit checks do not establish an independent installation, ABI/runtime comp
 
 Read [source license boundaries](source-license-boundaries.md) before sharing source or generated outputs. The current Apache/MIT contribution schedule and complete retained terms are in NOTICE and the linked boundaries document; a separate `LICENSE.nanexus` is not required. Frigate native branding is preserved; Nanexus is an independent integration, not an endorsed fork. Ship source only, not the locally built web/fonts/icons/ELF, official-image layers, credentials, CA, media/DB or private task evidence. The former private-image/private-install procedures are retired; required source helpers remain part of the Builder.
 
-The accepted technical source is `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`; `e38562865d87674b3f24d35735fd1a570b5f72fb` is the first Private publication-source checkpoint. Any later documentation-only checkpoint has a distinct Git identity recorded with its handoff. The Builder requires the actual checked-out expected source commit and records it in a new manifest. Every new output requires its own review and local acceptance; no existing acceptance is relabelled. `main` is a moving acquisition branch, not an immutable technical acceptance identity. Refer to the [support matrix](support-matrix.md) for the separate real-source, restored-timeline and reliability observations.
+The default technical source above is an immutable build reference, not a prebuilt package or a guarantee about newly generated bytes. The Builder requires its expected source commit to equal checkout HEAD and records that source in the new manifest. Review and explicitly accept your own output before runtime use; never reuse another build's acceptance. Local acceptance establishes reviewed build identity, not publisher attestation or independent production qualification. See the [support matrix](support-matrix.md) for separate real-source, restored-timeline and reliability observations.
