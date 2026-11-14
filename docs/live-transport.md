@@ -1,4 +1,6 @@
-# Private Live transport and Frigate relay boundary
+# Historical Frigate 0.18.0 Live transport
+
+> **Historical reference — superseded integration profile.** This document describes Frigate 0.18.0, not the supported 0.18.2 M1 installation. Retained module/transport design details are useful to maintainers; statements below about persistence, evidence downloads, Review/Export or future work apply to that older profile. They do not describe features delivered by the current Historical window. Use the [source-build guide](frigate-source-build.md) for installation and [current Historical window reference](historical.md#current-frigate-0182-window) for current behavior.
 
 This boundary targets only Frigate **v0.18.0 / 0.18.0-77a66e7**. It prepares browser consumption of Live status; it does not implement or claim desktop badges, supported UI surfaces, Historical transport or release readiness.
 

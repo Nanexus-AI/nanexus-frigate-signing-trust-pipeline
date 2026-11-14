@@ -1,4 +1,6 @@
-# Historical job transport — pinned Frigate desktop profile
+# Historical Frigate 0.18.0 Review/Export job transport
+
+> **Historical reference — superseded integration profile.** This document describes Frigate 0.18.0, not the supported 0.18.2 M1 installation. Retained module/transport design details are useful to maintainers; statements below about persistence, evidence downloads, Review/Export or future work apply to that older profile. They do not describe features delivered by the current Historical window. Use the [source-build guide](frigate-source-build.md) for installation and [current Historical window reference](historical.md#current-frigate-0182-window) for current behavior.
 
 This extends the separate Frigate v0.18.0 / `0.18.0-77a66e7` patch for the desktop single-camera Review/Export workflow. Historical verification concerns retained signed recording material, never the produced export artifact. D1 job, result, staging, execution and portable evidence contracts are unchanged.
 

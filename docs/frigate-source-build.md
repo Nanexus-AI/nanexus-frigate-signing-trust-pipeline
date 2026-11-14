@@ -1,15 +1,15 @@
-# Frigate 0.18.2 source-only developer prototype
+# Frigate 0.18.2 source-only build and installation
 
 This guide builds local components from source and mounts them into the **unchanged official Frigate image**. It does not create an integrated image or patch an existing deployment. Public delivery is source only. Local manifest acceptance means operator-owned build integrity, not publisher authorization, equivalence to private accepted binaries or independent attestation. Licensing/branding/publication gates remain separate; this guide does not clear redistribution of generated outputs.
 
 Supported binding only:
 
-- Latest local G8 technical reference commit `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`, with required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`. A later documentation/source handoff must name its own reviewed full commit; never guess a release ref.
+- Accepted technical build source `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`, with required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`. The first Private publication checkpoint is `e38562865d87674b3f24d35735fd1a570b5f72fb`. Later documentation checkpoints have their own full source identity; none independently inherits G8 acceptance. Use the reviewed full commit supplied for your installation.
 - Frigate `0.18.2-cfa08c5`, upstream `cfa08c56b23d23280c3d0a218e5a43182c97445b`.
 - Official runtime `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a`.
 - Official source archive SHA256 `fb5a04196c4be1dd332d4762e692ebb51fb5e949fafc2f3159830d44583ab005`.
 
-No private integrated image, retained compiled frontend/pair, private cache or `.local` experiment is an input. The technical baseline completed an independent Node20 build, local G1–G8 artifact acceptance and native official-image checks. Bounded browser validation demonstrated login/navigation, synthetic Historical wrapping and synthetic camera isolation. D5 exercised real three-camera Live and terminal Historical paths on the prior grid. The restored timeline subsequently passed focused fixture validation, owner visual approval and one independent clean Build/G1–G8 acceptance at that latest source reference. It was not rerun through the full D5 E2E. Independent ordinary-user installation/lifecycle and broader UI coverage remain separate gates. These instructions are a pre-publication handoff, not proof of a complete end-user qualification. Do not use the legacy packaging service.
+All required Nanexus inputs are tracked source; no private integrated image, prebuilt pair/frontend or developer cache is required. The accepted technical build and bounded real-source observations are summarized in the [support matrix](support-matrix.md). Independent ordinary-user lifecycle/recovery and production reliability are not qualified. This is the sole current installation procedure; older private-image/install workflows are superseded.
 
 ## 1. Prepare the developer environment
 
@@ -24,7 +24,9 @@ apt-get install --no-install-recommends \
   git curl ca-certificates openssl
 ```
 
-Package availability is not guaranteed. Both `/usr/bin/gcc` and `/usr/bin/g++` must actually report `13.3.0-6ubuntu2~24.04.1`; installing another compiler on PATH is insufficient for the existing OMS builder. Stop if this profile cannot be supplied; do not silently relax its version check. Obtain Node20 from the official [Node release directory](https://nodejs.org/dist/latest-v20.x/) and Docker from its official Linux installation instructions. No Buildx is needed. The upstream recipe fixes Node major20, not an exact patch/npm release; record actual versions. OMS needs OpenSSL development>=3, Meson>=0.49 (recorded reference1.12.1), Ninja and readelf. Use a dedicated environment if necessary; this tool does not install dependencies or alter system alternatives.
+Package availability is not guaranteed. Both `/usr/bin/gcc` and `/usr/bin/g++` must actually report `13.3.0-6ubuntu2~24.04.1`; installing another compiler on PATH is insufficient for the existing OMS builder. Stop if this profile cannot be supplied; do not silently relax its version check. Obtain Node 20 from the official [Node release directory](https://nodejs.org/dist/latest-v20.x/) and Docker from its official Linux installation instructions. No Buildx is needed. The upstream recipe fixes Node major20, not an exact patch/npm release; record actual versions. OMS needs OpenSSL development>=3, Meson>=0.49 (recorded reference1.12.1), Ninja and readelf. Use a dedicated environment if necessary; this tool does not install dependencies or alter system alternatives.
+
+**Node 20 is a frozen-build compatibility dependency and is [end-of-life](https://nodejs.org/en/about/eol).** It no longer receives normal upstream security maintenance. Use a dedicated disposable build environment with no production secrets and only the access needed to obtain reviewed inputs. npm installation/postinstall executes upstream dependency scripts; isolation is required even though output is used locally. Do not deploy Node as a runtime service or silently upgrade its major version to bypass this profile. A supported-toolchain migration requires separate code/build qualification.
 
 Your administrator supplies Node20 with its npm executable on PATH; this guide does not install or upgrade it. If installed outside the system PATH, set `NODE20_BIN` to that installation's `bin` directory and run `export PATH="$NODE20_BIN:$PATH"` in this shell. Record actual versions, not a developer cache location. No Compose or Buildx is required. Initial acquisition requires authorized access to the source handoff, official Node/package origins, GitHub codeload, GHCR and the npm registry/dependency origins used by upstream postinstall scripts. Offline/private-cache availability is not assumed.
 
@@ -49,11 +51,11 @@ docker --version
 
 Python3.11+ with actual tar data-filter support is required. Allow disk for full upstream source, npm dependencies, compiler intermediates, complete dist, pair and official image; check available disk/RAM before starting. No measured minimum is claimed. Docker operations are limited to official image inspection and a newly created **unstarted** temporary container for native file extraction. The builder never starts a runtime. The native ABI must later be checked against the official image, not inferred from matching filenames.
 
-## 2. Acquire reviewed public sources and official upstream inputs
+## 2. Acquire reviewed sources and official upstream inputs
 
 Use a full Git clone of [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline) containing the paired builder's required ancestry, not a source ZIP or shallow HEAD. Repository access depends on visibility and your permissions; these commands do not create a repository. Set `PIPELINE_ROOT` to the clean clone. The builder must be tracked in the reviewed commit; an uncommitted implementation checkout is intentionally not build-admitted.
 
-Use the origin below and the **exact full publication-source commit recorded in the approved handoff**. `main` is a moving branch, not an immutable acceptance identity. The full reviewed SHA is supplied alongside the handoff rather than embedded as this document's own self-referential commit hash. The accepted technical build remains sourced from `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`; a documentation/publication checkpoint is distinct and does not independently inherit G8 acceptance. A new operator build records and admits its own manifest. No release tag, compiled package or permission to redistribute generated outputs is implied.
+Use the origin below and the **exact full publication-source commit recorded in the source handoff**. `main` is a moving branch, not an immutable acceptance identity. The full reviewed SHA is supplied alongside the handoff rather than embedded as this document's own self-referential commit hash. The accepted technical build remains sourced from `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`; a documentation/publication checkpoint is distinct and does not independently inherit G8 acceptance. A new operator build records and admits its own manifest. No release tag, compiled package or permission to redistribute generated outputs is implied.
 
 ```sh
 SOURCE_ORIGIN=https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline.git
@@ -120,6 +122,8 @@ Acceptance creates a separate record and refuses an existing record. Output/mani
 
 ## 5. Prepare independent private runtime inputs
 
+`RUNTIME_ROOT` below is an operator-selected absolute private directory outside the checkout; the example value `$DEVELOPER_ROOT/runtime` is not a required literal name. Keep using the same variable throughout preparation, mounts, restart and recovery. The host CA is `$RUNTIME_ROOT/trust/ca.pem`; its fixed container path is `/nanexus/trust/ca.pem`.
+
 The following examples are **templates**, not valid until operator placeholders are replaced. They are not production defaults. Use one canonical native camera/Live stream binding, matching `source_camera` and `signed_source` in both examples. The Host Entry grid mapping supplies the monitor; do not add ambiguous duplicate source identities. `camera.live.streams` selects the native stream observed by the monitor. Supply a current credential-free signed RTSP endpoint that the container can reach; Host Entry rejects password-bearing URLs. Do not use protected restream services or replay a capture as fresh Live. Native YAML streams and Host Entry direct signing-reader URL must represent the same intended source. The supplied Live policy/supervision values preserve the bounded accepted profile, not a target state.
 
 ```sh
@@ -162,7 +166,11 @@ PYCODE
 
 These checks establish readability and parseability, not signer-chain compatibility. A missing CA or wrong/symlink path fails shared Host Entry configuration. An existing unreadable or malformed CA can pass the initial file-existence check and fail later during Historical trust reading/admission; `host-entry-ready` does not prove CA usability. Historical trust input is limited to 32768 bytes. Mismatched trust retains its actual operational/verification finding, never a prescribed RED result, manufactured media verdict or fallback test anchor. Live presence/freshness status does not evaluate this CA. Keep `historical.public_ca` at `/nanexus/trust/ca.pem`, with the trust directory mounted read-only.
 
-This is an independent local **transport** key/certificate, not a signing key. Browser acceptance of its self-signed identity is manual; Host Entry pins its public leaf. The prototype certificate expires after30 days; deliberate renewal requires native TLS/Host Entry repinning and remount/restart. Never disable backend pinning/native HTTPS to bypass this. Keep these files/token/native logs private. Host config/token/state/scratch must be owned by UID1000, with directory0700/private files0600. UID1000 must read/traverse Historical originals. No extra user provisioning is provided.
+### Transport TLS and hostname checking
+
+The generated key/certificate is a private local **transport** identity, not a signing key or signing CA. Host Entry creates its TLS context with `instance_certificate` as the trusted certificate file and explicitly sets `check_hostname=False` in `src/nanexus_trust/frigate/host_entry.py`. Certificate verification remains enabled, but hostname/SAN matching is disabled for this loopback profile because the generated local certificate lacks a SAN. The configured leaf trust anchor is not ordinary hostname validation. Keep `api_origin` loopback-only, protect the certificate and key, verify the intended fingerprint and preserve native Frigate authentication. This bounded exception must not be generalized to arbitrary remote endpoints.
+
+Browser acceptance of this self-signed identity is manual and separate from Host Entry trust. The certificate expires after 30 days; renewal requires native TLS/Host Entry trust-file replacement and remount/restart. Do not disable certificate verification or native HTTPS. Host config/token/state/scratch must be owned by UID 1000, with private directories 0700 and files 0600. UID 1000 must be able to traverse/read originals. No extra user provisioning is provided.
 
 Select the newly built pair explicitly, then translate only the executable path into the container:
 
@@ -299,16 +307,16 @@ Confirm the exact requested official reference, Linux/amd64, native /init, healt
 
 ### Windows 11 / browser on another machine
 
-The host's `127.0.0.1` is not your Windows computer's loopback. Before starting a human review, obtain explicit approval for a client-local SSH forward using an already authorized SSH identity/host alias. Do not broaden Docker to `0.0.0.0`, create a public proxy, change origin validation, or disable HTTPS. In Windows PowerShell with the existing OpenSSH client:
+The host's `127.0.0.1` is not your Windows computer's loopback. Use a client-local SSH forward through your existing authorized SSH identity/host alias to the container host. Do not broaden Docker to `0.0.0.0`, create a public proxy, change origin validation, or disable HTTPS. In Windows PowerShell with the existing OpenSSH client:
 
 ```powershell
-$K11SshAlias = 'REPLACE_WITH_EXISTING_AUTHORIZED_SSH_ALIAS'
+$ContainerHostSshAlias = 'REPLACE_WITH_EXISTING_AUTHORIZED_SSH_ALIAS'
 # Confirm client port18991 is free; close only your own conflicting session, never an unknown service.
 Get-NetTCPConnection -LocalPort 18991 -State Listen -ErrorAction SilentlyContinue
-ssh -N -L 127.0.0.1:18991:127.0.0.1:18991 $K11SshAlias
+ssh -N -L 127.0.0.1:18991:127.0.0.1:18991 $ContainerHostSshAlias
 ```
 
-Keep that approved forward open and browse `https://127.0.0.1:18991` on Windows. If using a different approved host port, substitute the identical port at both forward ends and in browser_origin/Docker/browser URL. Existing remote tooling does not prove a browser forward exists. Check the presented transport fingerprint against the privately obtained certificate; a certificate error/expiry must be resolved deliberately, not by globally disabling browser validation. Keep native authentication. If no safe access path exists, stop before handing off a running session. This example is a future authorized access step, not a tunnel created by the guide.
+Keep that forward open and browse `https://127.0.0.1:18991` on Windows. If using a different approved host port, substitute the identical port at both forward ends and in browser_origin/Docker/browser URL. Existing remote tooling does not prove a browser forward exists. Check the presented transport fingerprint against the privately obtained certificate; a certificate error/expiry must be resolved deliberately, not by globally disabling browser validation. Keep native authentication. If no safe access path exists, stop before handing off a running session. Run the forward on the browser machine and keep it open for the session.
 
 ### Bounded readiness and camera membership
 
@@ -320,17 +328,17 @@ docker top "$RUN_NAME" -eo pid,ppid,uid,args
 
 Observe an authenticated native profile and Nanexus session/Live availability in the browser's network panel; anonymous protected data must return401/403. Do not export authorization headers/cookies or run the Host Entry CLI as a dry run: it starts readers/listeners and has no --check-only mode.
 
-Tiles come from **authorized, enabled, non-replay native cameras**, matched to one canonical Host camera/stream/context binding each. There is no camera-add control inside Live Monitor. The monitor reads membership when opened; after deliberate configuration/restart, leave/reopen the monitor. Use one live stream per camera for this M1 setup (the entry chooses the first sorted stream label). Empty tiles with disabled cameras are not a signing verdict. See the [single integrated E2E runbook](frigate-e2e-acceptance.md) for the three-camera/operator acceptance gate.
+Tiles come from **authorized, enabled, non-replay native cameras**, matched to one canonical Host camera/stream/context binding each. There is no camera-add control inside Live Monitor. The monitor reads membership when opened; after deliberate configuration/restart, leave/reopen the monitor. Use one live stream per camera for this M1 setup (the entry chooses the first sorted stream label). Empty tiles with disabled cameras are not a signing verdict. See the [isolated operator acceptance procedure](frigate-e2e-acceptance.md) for reusable three-camera checks.
 
-With your authorized real signed stream, record actual current receipt freshness, mapping/session, states/reasons. UNKNOWN/DEGRADED/ACTIVE are observations, not installer targets; Live is structural/freshness policy, not real-time crypto trust. Historical requires matching originals/catalog/CA and a bounded product request that reaches the selected native Worker/OMS; report its true verdict/coverage, not a predetermined expected color. Missing real sample/trust/network is a distinct functional gap. Do not replay old captures or add fault injection.
+With your authorized real signed stream, record actual current receipt freshness, mapping/session, states/reasons. UNKNOWN/DEGRADED/ACTIVE are observations, not installer targets; Live is structural/freshness policy, not real-time crypto trust. Historical requires matching originals/catalog/CA and a bounded product request that reaches the selected native Worker/OMS; report actual execution and per-file findings separately from Catalog metadata and fixed response fields, not a predetermined expected color. Missing real sample/trust/network is a distinct functional gap. Do not replay old captures or add fault injection.
 
-### First Historical request (later operator acceptance)
+### First Historical request
 
 After actual native recording is finalized and visible in Frigate's Catalog, open the existing **N → Historical Verification** entry. Choose an authorized camera, date and increasing UTC hour/minute interval of at most30 minutes, then click **Verify once**. The API can represent fractional seconds; the UI's minute controls are not an exact fractional-segment selector. Never change Catalog rows or file timestamps to match a chosen interval.
 
 Results use one time-proportional timeline when query coverage is available. Finding intervals follow whole-file Catalog times clipped to the selected query; background gaps/outside regions are recording metadata, not signing findings or proof of signing coverage. Hover shows the recording identity, status, Catalog start/end and explicit UTC/raw-time provenance. When optional coverage is absent, an explicitly labelled chronological fixed-width wrapping grid preserves the recording results; equal widths in that fallback do not encode duration. Blocks do not navigate or select recordings. Pale gray is pending, green positive scope, amber partial/indeterminate and red integrity-negative, as returned by the backend. Operational failures and unavailable media are not forged cryptographic failures. Cancellation waits for termination; a timed-out submission is not proof it was never accepted, so do not blindly resubmit. Record the actual result rather than seeking a particular color.
 
-The current window UI does not adopt an existing API-created job or promise durable result/evidence export or resume. Its terminal release/expiry concerns Nanexus memory only. Successful execution is not all-VALID signing or complete context: the first prior real API request returned AMBER with105 VERIFIED_SIGNING,15 INDETERMINATE,16 unresolved and zero unprocessed, while origin remained HOLD and continuity/coverage UNKNOWN. Prefix context was missing. That is evidence of a product execution, not an expected result for your source or a new browser acceptance of this candidate.
+The current window UI does not adopt an existing API-created job or provide durable result/evidence export or resume. Its terminal release/expiry concerns Nanexus memory only. Successful execution does not mean all files are VALID. The response fields `origin=HOLD`, `continuity=UNKNOWN`, `coverage=UNKNOWN` are fixed conservative values, not independently calculated assessments and not separately rendered UI findings. Optional `query_coverage` is Catalog metadata, not cryptographic signing coverage. Actual per-file Worker/OMS findings remain separate; see the [Historical reference](historical.md#current-frigate-0182-window). Prior observations belong in the [support matrix](support-matrix.md#recorded-validation-observations), not an expected-result recipe.
 
 Enable native recording/detection as in the template, adjusting dimensions only to your actual input. Verify finalized playable recordings and genuine completed CPU detector responses in fresh native stats; a live detector process or initialized inference speed alone is insufficient. No ordinary-user reliability/endurance claim follows from this prototype.
 
@@ -373,17 +381,29 @@ Verify native login/API/UI and retained recording playback. This preserves indep
 - Dirty/untracked build source or helper not in reviewed commit: obtain the reviewed full clone; don't bypass checks. The implementation checkout alone is not public build qualification.
 - Node/compiler/dependency/lock failure: stop, retain the partial external root for private diagnosis and seek review. No automatic npm-ci/Node-major switch or admission of a private dist.
 - Missing worker/reference, alternate symlink, mode drift or changed bytes: verification fails. Never reseal manually to hide a replacement.
-- Missing acceptance: review manifest digest, use explicit accept, then verify with --require-accepted. Existing private fixed-hash installer is a different workflow and remains unchanged.
+- Missing acceptance: review manifest digest, use explicit accept, then verify with --require-accepted. The superseded private fixed-hash workflow is not an alternative admission path.
 - Nginx missing include/permission error: complete writable operational copy is required; inspect generated fragments against intended TLS/listen settings. Never relax canonical inventory.
 - Missing CA path: Host configuration fails. Unreadable/malformed/oversized CA may fail later when Historical reads or admits trust; check the RO mount, UID1000 access, one PEM and the 32768-byte cap. Wrong but parseable CA retains its actual finding. No signing key/test-root fallback; PEM parsing is not chain compatibility.
 - Host Entry configuration/identity/TLS/permission failure: check placeholders, host/container Worker path translation, both selected hashes, UID1000 modes, readable original media and matching pinned leaf. Do not disable auth/pinning.
 - Pair executable blocked or ABI mismatch: inspect host noexec/architecture and actual pinned runtime library resolution. Source identity alone does not qualify arbitrary toolchains.
 - Live or Historical unavailable: distinguish native readiness, mapping/network/trust/media/metadata gaps from actual signing result; report honest state.
 
-Focused offline checks only: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_frigate_source_build.py -v`. Do not run broad test discovery or `tests/test_frigate_host_entry.py` against existing services. A separately reviewed clean build/runtime validation remains required before claiming this handoff works end to end.
+## Developer checks and test portability
+
+From the checkout root, the following explicitly selected Python standard-library unit tests are portable offline checks of the source-builder contract. The module uses temporary fixtures and mocks/tripwires for subprocess execution; it does not perform a real build, Docker operation or network request:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_frigate_source_build.py -v
+```
+
+`tests/test_frigate_private_install.py` also contains isolated mocked helper tests, but covers the legacy helper contract rather than an alternative supported installation procedure. Other module tests must be inspected for their own fixtures and external requirements before explicit selection; the complete repository suite is not asserted to be portable.
+
+**Do not use unqualified `pytest` or broad unittest discovery.** `tests/test_frigate_host_entry.py` calls `_baseline()` at module import time, querying a developer Docker container and host processes, and references unshipped `.local` Worker files. Even collection/import can contact that environment. Exclude it from general contributor checks; run it only as a separately reviewed environment-specific test after its assumptions have been addressed. Moving external inspection out of import and replacing private fixture dependencies is a separate code-remediation item, not a documentation fix. Do not import it merely to list its tests.
+
+These unit checks do not establish an independent installation, ABI/runtime compatibility, real-source verification or data-preserving recovery result.
 
 ## Source and release boundaries
 
-Read [source license boundaries](source-license-boundaries.md) before sharing source or generated outputs. The current Apache/MIT contribution schedule and complete retained terms are in NOTICE and the linked boundaries document; a separate `LICENSE.nanexus` is not required. Frigate native branding is preserved; Nanexus is an independent integration, not an endorsed fork. Ship source only, not the locally built web/fonts/icons/ELF, official-image layers, credentials, CA, media/DB or private task evidence. Private-image/legacy packaging instructions are not this installation route.
+Read [source license boundaries](source-license-boundaries.md) before sharing source or generated outputs. The current Apache/MIT contribution schedule and complete retained terms are in NOTICE and the linked boundaries document; a separate `LICENSE.nanexus` is not required. Frigate native branding is preserved; Nanexus is an independent integration, not an endorsed fork. Ship source only, not the locally built web/fonts/icons/ELF, official-image layers, credentials, CA, media/DB or private task evidence. The former private-image/private-install procedures are retired; required source helpers remain part of the Builder.
 
-The latest frozen technical reference is committed and locally G8 accepted. D5 completed real three-camera functional E2E on the preceding D4 frontend; the restored Historical timeline received separate focused browser/owner approval and clean-build acceptance, without another real-source E2E. Later source outputs require their own reviewed manifest and G8 acknowledgment; acceptance is not inherited from the frozen technical reference. A reviewed handoff and independent ordinary-user installation/recovery remain necessary before claiming that release qualification. Preserve the old accepted manifest/acceptance; a fresh build needs its own reviewed identities and local acknowledgment. Native cleanup warnings and unresolved R2 failure-isolation limits remain documented in the [support contract](support-matrix.md); no HA/production guarantee follows.
+The accepted technical source is `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`; `e38562865d87674b3f24d35735fd1a570b5f72fb` is the first Private publication-source checkpoint. Any later documentation-only checkpoint has a distinct Git identity recorded with its handoff. The Builder requires the actual checked-out expected source commit and records it in a new manifest. Every new output requires its own review and local acceptance; no existing acceptance is relabelled. `main` is a moving acquisition branch, not an immutable technical acceptance identity. Refer to the [support matrix](support-matrix.md) for the separate real-source, restored-timeline and reliability observations.

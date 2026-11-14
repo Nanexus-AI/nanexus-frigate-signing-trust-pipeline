@@ -1,4 +1,6 @@
-# Companion integration foundation
+# Historical Frigate 0.18.0 companion foundation
+
+> **Historical reference — superseded integration profile.** This document describes Frigate 0.18.0, not the supported 0.18.2 M1 installation. Retained module/transport design details are useful to maintainers; statements below about persistence, evidence downloads, Review/Export or future work apply to that older profile. They do not describe features delivered by the current Historical window. Use the [source-build guide](frigate-source-build.md) for installation and [current Historical window reference](historical.md#current-frigate-0182-window) for current behavior.
 
 This foundation targets only Frigate **v0.18.0** (`77a66e75c61862b048a07c1295877f4b31343504`). It supplies backend infrastructure for later desktop Frigate-native integration. It includes no browser page, installation package or release qualification. An optional [private Live transport](live-transport.md) and separate Frigate authentication relay provide read-only browser support infrastructure. Python 3.11+ and POSIX file descriptors/permissions are required; standard library only.
 
@@ -53,4 +55,4 @@ No endpoint or filesystem path is accepted from the UI-facing boundary; paths in
 
 ## Validation limits
 
-Deterministic tests use synthetic SQLite databases (including real committed WAL), local media files and pipes. They cover read-only access, incomplete snapshots, staging races/containment, exact rendition mapping/reset, durable restart behavior and portable evidence without re-execution. They do not establish live Frigate deployment, hardware compatibility, signing validity of synthetic data, release readiness or broad version compatibility. Longer local integration, C210/Gateway acceptance and complete product E2E remain separately authorized future activities. Desktop UX is deferred to later slices; mobile support is outside M1.
+Deterministic tests use synthetic SQLite databases (including real committed WAL), local media files and pipes. They cover read-only access, incomplete snapshots, staging races/containment, exact rendition mapping/reset, durable restart behavior and portable evidence without re-execution. They do not establish live Frigate deployment, hardware compatibility, signing validity of synthetic data, release readiness or broad version compatibility. These foundation tests alone do not qualify a desktop product. Later integrated observations are recorded separately in the [support matrix](support-matrix.md); mobile support is outside M1.

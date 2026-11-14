@@ -1,6 +1,27 @@
-# Offline Historical backend
+# Historical verification: current window and offline module reference
 
-The Python application accepts a camera and half-open requested time range. Deployment configures a metadata source, finite executor, verification backend, evidence store, public trust configuration identity and limits. There is no HTTP listener, daemon, SQLite watcher, Live observer or dependency on a running Frigate instance.
+This reference distinguishes the integrated M1 product path from the independently usable offline service. Installation is documented only in the [source-build guide](frigate-source-build.md).
+
+## Current Frigate 0.18.2 window
+
+The supported window uses Host Entry, `companion/window_http.py`, the `historical_v2` coordinator and the selected portable Worker with its paired OMS library. It selects original retained files from the authenticated native recording Catalog. It does **not** use the older durable `HistoricalService`/JobStore workflow described below and in the [historical transport design](historical-transport.md).
+
+| Response or UI element | Meaning and limits |
+|---|---|
+| Per-file `finding` / `state` | Actual Worker/OMS-derived GREEN, AMBER or RED for completed files; PENDING is execution progress, not a verdict. Partial/indeterminate AMBER is not automatically cryptographic failure. |
+| Top-level `state`, `reason`, completion counts | Request execution outcome; COMPLETE does not mean all files are VALID. Infrastructure errors and unavailable media remain distinct. |
+| `metadata_interval`, Catalog span and gaps | Native recording selection metadata; not authenticated signing time or proof of continuous signed media. |
+| Optional `query_coverage` | Catalog-based partition of the selected query, used for proportional display. It is not cryptographic signing coverage. Absent data uses a labelled ordinal grid; malformed data produces an error. |
+| `origin=HOLD`, `continuity=UNKNOWN`, `coverage=UNKNOWN` | Fixed conservative fields returned by `observe()` for this window. They are not independently computed per-request assessments and the UI does not render them as separate verdict axes. They do not replace the actual per-file findings. |
+| `summary`, `evidence_available`, `summary_only` | Backend progress/availability metadata, not a durable evidence archive or a current UI download feature. |
+
+The UI offers one authorized camera and an increasing UTC interval of at most 30 minutes. It displays state, counts, per-file colors and Catalog intervals, with hover information and no block navigation. Results are volatile; terminal release/expiry affects Nanexus memory. No durable result management across restart, UI adoption of an API-created job, resume, Review/Export association or evidence ZIP download is promised by this window.
+
+Source references: `src/nanexus_trust/companion/window_http.py` (`observe`, `_query_coverage`) and `ui/nanexus/historical.js` (`apply`, `drawCoverage`, `drawSegments`). Keep execution state, file findings and metadata coverage distinct when consuming the API.
+
+## Standalone offline HistoricalService
+
+The standalone `HistoricalService` application accepts a camera and half-open requested time range. Deployment configures a metadata source, finite executor, verification backend, evidence store, public trust configuration identity and limits. There is no HTTP listener, daemon, SQLite watcher, Live observer or dependency on a running Frigate instance.
 
 ## Responsibilities
 
@@ -13,17 +34,17 @@ The Python application accepts a camera and half-open requested time range. Depl
 | `VerificationBackend` protocol | Return an M1 result enum, integrity/continuity/completeness, pending counters and optional supporting artifacts |
 | `ToolkitBackend` | Interpret supported verify/inspect schema and exits at one boundary; preserve supported JSON reports without local command lines |
 
-`HistoricalResult` remains the sole verification/coverage model. `HistoricalOperation` wraps it with candidate progression, evidence reference and evidence-storage outcome; these are not alternative verdicts. The executor and backend have no Frigate schema, business-range planning or expansion logic. The metadata adapter does not classify signatures.
+Within this standalone service, `HistoricalResult` is the verification/coverage model. `HistoricalOperation` wraps it with candidate progression, evidence reference and evidence-storage outcome; these are not alternative verdicts. The executor and backend have no Frigate schema, business-range planning or expansion logic. The metadata adapter does not classify signatures.
 
 ## Metadata and readiness contract
 
-Supply an immutable tuple of row dictionaries with `id`, `camera`, `start_time`, `end_time`, `path` and boolean `closed`. Time endpoints are decimal Unix UTC second **strings**, preserving metadata precision without binary floating-point conversion. A future JSON/SQLite integration must normalize these types deliberately. Rows are copied on construction, filtered by exact camera and sorted by numeric start/end then recording ID. Duplicate identities/paths or malformed rows are rejected conservatively.
+Supply an immutable tuple of row dictionaries with `id`, `camera`, `start_time`, `end_time`, `path` and boolean `closed`. Time endpoints are decimal Unix UTC second **strings**, preserving metadata precision without binary floating-point conversion. Adapters supplying JSON/SQLite data must normalize these types deliberately. Rows are copied on construction, filtered by exact camera and sorted by numeric start/end then recording ID. Duplicate identities/paths or malformed rows are rejected conservatively.
 
 The configured container recording mount maps onto one retained-media root. This is configuration, not part of trust logic or portable evidence. Relative references are derived only from metadata paths; filesystem names never create rows. Traversal, another mount prefix, backslashes and symlinks in the retained path/root are rejected. Files must be regular, nonempty and explicitly closed. No symlink resolution fallback occurs.
 
 Availability distinguishes `READY`, `NOT_READY`, `MISSING` and `UNAVAILABLE`. Every descriptor is indexed by construction; existence does not mean closed/eligible. READY records carry actual byte count and digest, checked during extraction and again before candidate acceptance. Oversized files cannot bypass resource limits. `coherent=False` refuses the snapshot; `complete=False` retains INDETERMINATE metadata coverage even if supplied intervals appear to cover the request.
 
-The caller attests that rows are a coherent snapshot and that `closed` has been established independently. These assertions are suitable for frozen offline fixtures; they do not implement current file readiness or WAL-coherent discovery. Later runtime integration must supply the real closure/coherence mechanism. A stable caller-owned filesystem is required throughout adapter operations; this API is not a hostile concurrent-filesystem sandbox.
+The caller attests that rows are a coherent snapshot and that `closed` has been established independently. These assertions are suitable for frozen offline fixtures; they do not implement current file readiness or WAL-coherent discovery. A runtime adapter must supply the real closure/coherence mechanism; these caller attestations are not the current window's Catalog admission procedure. A stable caller-owned filesystem is required throughout adapter operations; this API is not a hostile concurrent-filesystem sandbox.
 
 ## Candidates, expansion and coverage
 
@@ -84,7 +105,7 @@ Defaults: 3 files, 2 expansions, 16 MiB per candidate/reconstruction, 1,000 meta
 
 Each request attempts M1-A bundle issuance, including unknown and exhausted outcomes. Artifacts include candidate IDs, ordered recording IDs, byte accounting, pending counters, integrity/completeness and preserved backend reports when configured. Failed execution attempts record an UNKNOWN progression entry. Stop reason is in the final result. References/provenance contain no private local absolute paths. Supporting JSON is checked for configured/local absolute paths; raw command lines, stderr and ffprobe documents are not exported. Custom backends remain responsible for providing portable artifact data.
 
-Evidence-storage failure is separate: `evidence_reference=None` and `evidence_reason=EVIDENCE_UNAVAILABLE`; it cannot rewrite a valid or partial verdict. Evidence success is `ISSUED`. Partial output directories follow the M1-A no-overwrite/no-automatic-repair rule.
+Evidence-storage failure is separate: `evidence_reference=None` and `evidence_reason=EVIDENCE_UNAVAILABLE`; it cannot rewrite a valid or partial verdict. Evidence success is `ISSUED`. Partial output directories are preserved without overwrite or automatic repair.
 
 Completed lookup accepts only an `EvidenceReference` and reads a bounded local store of receipts. It never calls metadata discovery, the executor or backend. Missing, duplicate, malformed, tampered or unsupported evidence remains recognition UNKNOWN. Pointing the service at a relocated store preserves recognition. This small bounded directory lookup is not a production database/registry; exceeding its configured row bound returns uncertainty.
 

@@ -1,4 +1,6 @@
-# Recorded evidence contract, version 1
+# Standalone recorded-evidence contract, version 1
+
+This developer reference describes `nanexus_trust.contracts` and `nanexus_trust.evidence`, not an evidence-download feature of the current Frigate Historical window. That window uses a separate response and volatile lifecycle described in [Historical verification](historical.md#current-frigate-0182-window).
 
 ## Domain and timing
 
@@ -11,7 +13,7 @@
 | Requested-range coverage | `FULL`, `INDETERMINATE` |
 | Live signing observation | `ACTIVE`, `DEGRADED`, `UNKNOWN` |
 
-The last axis is only a vocabulary here; no Live observer is implemented. Runtime health is outside these verdicts. Enum types cannot substitute for each other even when their string values match.
+The last axis is vocabulary in this recorded-evidence module; the separate [Live core](live.md) implements the observer used by the integration. Runtime health is outside these verdicts. Enum types cannot substitute for each other even when their string values match.
 
 `CameraId` and `RenditionId` are logical identities, not endpoints, paths or signer vendor identities. IDs are 1–128 ASCII letters/digits/`_.:-`, beginning with an alphanumeric character. A `RequestedRange` carries a caller-assigned request ID, camera, optional rendition and nonempty half-open interval. The request ID is a correlation key, not an authenticated identity or content digest.
 

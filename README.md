@@ -6,19 +6,19 @@ Nanexus adds Live Monitor and Historical Verification to Frigate. It helps opera
 
 M1 is a **source-integrated functional prototype for Frigate 0.18.2-cfa08c5 on Linux amd64**. Build the integration locally and mount it into the pinned official Frigate image.
 
-[Source-only installation](#source-only-installation) · [Supported environment](docs/support-matrix.md) · [Verification semantics](#reading-results-accurately)
+[Source-only installation](#source-only-installation) · [Supported environment](docs/support-matrix.md) · [Verification semantics](#reading-results-accurately) · [Technical references](docs/README.md)
 
 ### Live Monitor
 
-![Illustrative sixteen-tile Live Monitor presentation; not an actual sixteen-camera deployment or validation result.](assets/nanexus-live-16-demo-no-bird.png)
+![Illustrative sixteen-camera Live Signing Monitor layout.](assets/nanexus-live-16-demo-no-bird.png)
 
-*Illustrative UI presentation based on owner-approved artwork, with only the upper-left bird logo removed. The 16-camera arrangement, pictured scenes, timestamps and status badges are illustrative—not evidence of a tested 16-camera deployment. Actual D5 validation used three real cameras, as described below.*
+*Illustrative view of the Nanexus Live Signing Monitor with a 16-camera layout.*
 
 ### Historical Verification
 
-![Illustrative Historical Verification presentation with a proportional timeline; displayed counts and colors are not a newly executed verification result.](assets/nanexus-historical-demo-no-bird.png)
+![Illustrative Historical Verification timeline.](assets/nanexus-historical-demo-no-bird.png)
 
-*Illustrative UI presentation of the wider timeline, based on owner-approved artwork with only the upper-left bird logo removed. Its dates, counts and classifications are illustrative, not a new Historical execution or a D5 screenshot. The accepted frontend and real validation evidence are described separately below.*
+*Illustrative view of the Nanexus Historical Verification timeline.*
 
 ## What it does
 
@@ -70,7 +70,7 @@ Nanexus-owned code in both projects uses Apache-2.0; their third-party component
 |---|---|
 | Frigate | **0.18.2-cfa08c5** only; exact upstream source and official image digest are pinned in the [guide](docs/frigate-source-build.md). |
 | Platform | Native Linux amd64; Ubuntu 24.04 build profile; runtime Host Entry UID/GID 1000. Other architectures and Frigate versions are not qualified. |
-| Build tools | Node 20; GCC/G++ `13.3.0-6ubuntu2~24.04.1`; Python with tar data-filter support; OpenSSL development headers, Meson, Ninja and Docker. Exact prerequisites and recorded reference versions are in the guide. |
+| Build tools | Node 20 (end-of-life; isolated build use only); GCC/G++ `13.3.0-6ubuntu2~24.04.1`; Python with tar data-filter support; OpenSSL development headers, Meson, Ninja and Docker. Exact prerequisites and recorded reference versions are in the guide. |
 | Signed input | Supported H.264 / ONVIF Media Signing evidence subset. Not every ONVIF camera or profile is supported. Host Entry does not accept credential-bearing RTSP URLs. |
 | Trust and access | One operator-supplied public CA, native Frigate authentication/TLS and an operator-controlled loopback browser access path. |
 | Operating scope | Bounded technical demonstration and ordinary operation with few users. No production HA, enterprise compliance or unattended 24/7 reliability guarantee. |
@@ -88,7 +88,7 @@ Source repository: [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://g
 3. **Start the official image with the documented 20 mounts.** Native `/init`, s6 and authentication/TLS remain in control; Host Entry runs non-root. Built assets and Historical's view of recordings are read-only. Native storage and the operational nginx copy remain separate.
 4. **Log in and open N → Live Monitor or Historical Verification.** For Historical, choose an authorized camera and a real Catalog-backed UTC interval, then inspect its actual findings and limitations.
 
-Place the operator's public CA at **`nanexus-runtime/trust/ca.pem`**, mounted read-only at **`/nanexus/trust/ca.pem`**. **A single trusted CA certificate is sufficient for the current supported setup.** It is not bundled. Signing private keys stay on the signer; the runtime TLS key is a separate private transport identity.
+Place the operator's public CA at **`$RUNTIME_ROOT/trust/ca.pem`** in the private runtime directory selected in the guide, mounted read-only at **`/nanexus/trust/ca.pem`**. **A single trusted CA certificate is sufficient for the current supported setup.** It is not bundled. Signing private keys stay on the signer; the runtime TLS key is a separate private transport identity.
 
 The guide covers safe remote-browser access, stop/start, container recreation and native-only recovery while retaining external data. Native retention/database behavior still applies. Keep original media and metadata intact; do not rewrite them to obtain a preferred verification result.
 
@@ -110,17 +110,17 @@ None of these is a cryptographic verdict, a certificate-trust result or a camera
 | **Red / integrity-negative** | A reported integrity-negative finding. Infrastructure errors and missing media must be distinguished from this category. |
 | **Blue-gray / Catalog gap; gray / no recordings supplied** | Recording-selection context in the proportional display, not a signature verdict. |
 
-**Execution completed does not mean every recording segment is VALID.** Missing media, unresolved signing context, resource limits, origin/trust uncertainty and continuity or coverage limitations remain visible findings. Timeline widths use recording Catalog metadata; they do not prove continuous signing coverage. If optional coverage data is absent, the explicitly labelled ordinal grid is used instead. Invalid supplied coverage is not silently replaced by an invented timeline.
+**Execution completed does not mean every recording segment is VALID.** The UI shows execution state and per-file Worker/OMS findings. Timeline widths and gaps use recording Catalog metadata, not cryptographic signing coverage. The window API also returns fixed conservative fields (`origin=HOLD`, `continuity=UNKNOWN`, `coverage=UNKNOWN`); these are not independently calculated assessments or separately displayed UI verdicts. If optional query coverage is absent, the labelled ordinal grid is used; malformed coverage produces an error. See the [Historical reference](docs/historical.md#current-frigate-0182-window) for the distinction between these fields and standalone verification APIs.
 
 ## What has actually been validated
 
 **Real three-camera D5 acceptance:** three physical cameras through an existing signing Gateway, actual Live stills/statuses, native retained recordings and playback samples, and Windows 11 owner review of Live.
 
-Two separate Historical runs were observed: the recorded UI run completed **13/13 files, all AMBER**, with origin **HOLD** and continuity/coverage **UNKNOWN**; a separate **owner-observed run completed 74/74 files: 72 GREEN and 2 AMBER**. Actual Worker/OMS execution and native recording Catalog/database integration were evidenced. Completion is not an all-VALID result, and the runs must not be merged. The [support contract](docs/support-matrix.md) retains detailed observations and provenance. These results are separate from the illustrations above.
+Two separate Historical runs were observed: the recorded UI run completed **13/13 files, all AMBER**; a separate **owner-observed run completed 74/74 files: 72 GREEN and 2 AMBER**. Actual Worker/OMS execution and native recording Catalog/database integration were evidenced. The 13-file response also carried the fixed conservative fields described above. Completion is not an all-VALID result, and the runs must not be merged. The [support matrix](docs/support-matrix.md#recorded-validation-observations) distinguishes the recorded and owner-observed evidence. The illustrations above are not test results.
 
-**Later Historical restoration:** the wider timeline received focused offline/browser checks, owner visual approval and one independent clean Build/G1–G8 acceptance at source **`e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`**. Worker/OMS and the compiled Frigate frontend matched D4; the separate Historical injection assets changed. `verify --require-accepted` passed. The full three-camera D5 E2E was **not repeated** on this frontend.
+**Later Historical timeline:** the restored proportional presentation received focused fixture/browser validation and visual review, followed by an independent clean build and local artifact acceptance at source **`e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`**. The full three-camera E2E was **not repeated** on this frontend.
 
-Local G8 acknowledges an operator-owned build, not publisher authorization or signature attestation. Independent ordinary-user installation/recovery and release decisions remain separate gates. See [E2E scope and evidence](docs/frigate-e2e-acceptance.md).
+Local build acceptance records an operator-reviewed output, not publisher attestation. Independent ordinary-user installation/recovery and production reliability remain unqualified. See [E2E scope and procedure](docs/frigate-e2e-acceptance.md).
 
 ## Acknowledgements
 

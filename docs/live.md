@@ -1,4 +1,6 @@
-# Live Signing Status
+# Live signing-status core reference
+
+This is the standalone observer/service contract for developers. The current Frigate 0.18.2 integration supplies transport ownership through Host Entry and its scheduler; follow the [source-build guide](frigate-source-build.md) for deployment. Statements below about what the core does not own are module boundaries, not missing integrated product features.
 
 Live observes supported compressed H.264 signing structures at actual receipt times under an explicit policy. It does not verify signatures, call Historical verification, produce Historical receipts or establish retained-media coverage. Media progress and signing evidence are separate observations.
 
@@ -62,7 +64,7 @@ The core is also usable independently as `LiveObserver(policy)` with `begin`, `f
 
 `LiveResult` contains camera/rendition, status/reason, observation timestamp, evidence age, last evidence timestamp, session reference, opaque mapping identity, policy ID and separate media/evidence observation booleans. `to_dict()` emits status and decimal milliseconds as strings for JSON transport. No raw source ID/URL, credentials, parser state, timing thresholds, private keys or Historical verdict appear in caller responses.
 
-Identifiers are logical names, never secret values. Policy/source IDs reject endpoint/path syntax. Transport secrets belong to a future deployment adapter, not this package's mapping/result contract. No observation log or artifact is persisted. Ended-session timestamps may remain factual diagnostics while status is UNKNOWN; they never confer current eligibility and are cleared on replacement. Display booleans describe observed presence within the horizon, not health or authenticity.
+Identifiers are logical names, never secret values. Policy/source IDs reject endpoint/path syntax. Transport configuration belongs to the deployment adapter, not this package's mapping/result contract. The current Host Entry accepts credential-free RTSP URLs; service bearer credentials remain private. No observation log or artifact is persisted. Ended-session timestamps may remain factual diagnostics while status is UNKNOWN; they never confer current eligibility and are cleared on replacement. Display booleans describe observed presence within the horizon, not health or authenticity.
 
 ## Supported structure and resource bounds
 
@@ -72,4 +74,4 @@ Default parser ceilings are 1 MiB per NAL, 64 KiB per input chunk, 64 SEI messag
 
 Each observer retains one session, two observation timestamps and saturating counters, with no session/event history list. The horizon limits status eligibility; at most two old timestamp scalars may remain factual diagnostics until replaced. The facade supports at most 16 bindings/entries and drains at most 256 events per query. Exhausting the query budget disables observation as UNKNOWN/adapter_backlog rather than holding an unbounded queue. The source implementation must enforce its own queue bound. Scalar parser diagnostics are for deployment/tests and are excluded from caller results.
 
-Public tests use tiny synthetic structural payloads with deliberately non-cryptographic signature placeholders. They test parser/status/lifecycle semantics, not real signature verification. Offline projection of preserved real timings is recorded separately and is not a claim of current transport integration. Actual Frigate discovery, continuous transport ownership and deployment validation remain later integration work.
+Public tests use tiny synthetic structural payloads with deliberately non-cryptographic signature placeholders. They test parser/status/lifecycle semantics, not real signature verification. These core tests do not establish current transport behavior. The integrated Host Entry owns current readers and scheduling; bounded three-camera observations are documented separately in the [support matrix](support-matrix.md).
