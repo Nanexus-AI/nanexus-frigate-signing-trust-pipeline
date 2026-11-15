@@ -4,7 +4,7 @@ This guide builds local components from source and mounts them into the **unchan
 
 Supported binding only:
 
-- Default immutable technical source `e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`, containing the Builder and required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`.
+- Default immutable technical source `7640d150de8a219c3ad08e2958e5db90f22be79b`, containing the Builder and required ancestor `9cae6d1d695cd4d7b6e12933bcb3cf868583150c`.
 - Frigate `0.18.2-cfa08c5`, upstream `cfa08c56b23d23280c3d0a218e5a43182c97445b`.
 - Official runtime `ghcr.io/blakeblackshear/frigate@sha256:fd60f99ffd4eb6c42360ed4e14953e270586f239309ab3983e55b2e97ffac09a`.
 - Official source archive SHA256 `fb5a04196c4be1dd332d4762e692ebb51fb5e949fafc2f3159830d44583ab005`.
@@ -55,13 +55,13 @@ Python3.11+ with actual tar data-filter support is required. Allow disk for full
 
 Use a full Git clone of [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline) containing the paired builder's required ancestry, not a source ZIP or shallow HEAD. Repository access depends on visibility and your permissions; these commands do not create a repository. Set `PIPELINE_ROOT` to the clean clone. The builder must be tracked in the reviewed commit; an uncommitted implementation checkout is intentionally not build-admitted.
 
-The commands below select the immutable accepted technical source **`e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5`**. It contains the tracked Builder, required ancestry and runtime templates. Keep this guide open while following the procedure: the detached technical checkout can contain older documentation; use this guide for the current instructions. No private handoff or prebuilt artifact is needed to identify this source.
+The commands below select the immutable accepted technical source **`7640d150de8a219c3ad08e2958e5db90f22be79b`**. It includes the Live Reader Recovery and Historical Local Timezone fixes, the tracked Builder, required ancestry and runtime templates. Keep this guide open while following the procedure: the detached technical checkout can contain older documentation; use this guide for the current instructions. No private handoff or prebuilt artifact is needed to identify this source. Subsequent documentation-only updates do not change this technical build reference or provide separate build acceptance.
 
 You may explicitly select another reviewed full 40-character commit if it contains the required Builder/ancestry and clean build inputs. Set `REVIEWED_SOURCE_COMMIT` before checkout and pass the resulting actual HEAD to the Builder. Do not substitute moving `main` or invent a release tag. Every new build records its own source and artifact identities and requires its own manifest review and local acceptance; using the technical reference does not make new output automatically accepted.
 
 ```sh
 SOURCE_ORIGIN=https://github.com/Nanexus-AI/nanexus-frigate-signing-trust-pipeline.git
-REVIEWED_SOURCE_COMMIT=e84a7b7cfdbae960558a0582f4bd3cbf7dfee5e5
+REVIEWED_SOURCE_COMMIT=7640d150de8a219c3ad08e2958e5db90f22be79b
 PIPELINE_ROOT=/absolute/path/to/fresh-operator-clone
 # Full clone preserves required ancestry; do not use --depth or a source ZIP.
 git clone --no-local "$SOURCE_ORIGIN" "$PIPELINE_ROOT"

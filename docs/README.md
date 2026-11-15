@@ -2,6 +2,7 @@
 
 ## Current operator guides
 
+- [Changelog](../CHANGELOG.md) — unreleased post-M1 maintenance fixes.
 - [Source-only build and installation](frigate-source-build.md) — the single current installation procedure for Frigate **0.18.2-cfa08c5**, Linux amd64.
 - [Support matrix](support-matrix.md) — supported behavior, limitations and recorded validation observations.
 - [Operator acceptance procedure](frigate-e2e-acceptance.md) — reusable checks for a separate isolated installation, not a claim of production qualification.
