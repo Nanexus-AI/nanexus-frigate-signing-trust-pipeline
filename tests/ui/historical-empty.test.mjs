@@ -35,6 +35,7 @@ const dom = new JSDOM("<!doctype html><html><body><div id='root'></div></body></
 });
 const window = dom.window;
 window.fetch = async (path) => {
+  if (path === "/api/config") return new Response(JSON.stringify({ui:{timezone:"UTC"}}), {status:200,headers:{"Content-Type":"application/json"}});
   if (path === "/__nanexus/session") {
     return responseFor({ principal: "admin", cameras: [{ camera_id: "cam1", display_name: "cam1" }], operations_available: true });
   }

@@ -75,7 +75,7 @@ Nanexus-owned code in both projects uses Apache-2.0; their third-party component
 | Trust and access | One operator-supplied public CA, native Frigate authentication/TLS and an operator-controlled loopback browser access path. |
 | Operating scope | Bounded technical demonstration and ordinary operation with few users. No production HA, enterprise compliance or unattended 24/7 reliability guarantee. |
 
-Live images load once per displayed camera in a mounted monitor session; image refresh/retry and video playback in those tiles are not provided. Historical requests select one authorized camera and a UTC interval of up to 30 minutes. Results are volatile, with no durable result archive, resume or evidence-export promise. Verification of exported MP4 files is outside this profile.
+Live images load once per displayed camera in a mounted monitor session; image refresh/retry and video playback in those tiles are not provided. Historical converts the displayed interval to absolute Unix timestamps for the backend. Historical requests select one authorized camera and an interval of up to 30 actual minutes in Frigate’s configured UI timezone (browser timezone when unset). Results are volatile, with no durable result archive, resume or evidence-export promise. Verification of exported MP4 files is outside this profile.
 
 ## Source-only installation
 
@@ -86,7 +86,7 @@ Source repository: [Nanexus-AI/nanexus-frigate-signing-trust-pipeline](https://g
 1. **Acquire and build the reviewed source.** Follow the guide's prerequisites and existing Builder workflow. Review your output manifest, explicitly accept that local build and run `verify --require-accepted`.
 2. **Configure private runtime inputs.** Supply authorized signed streams, TLS, credentials and the public signing trust CA. Use the existing Selector to choose the built Worker/OMS pair and configure Host Entry.
 3. **Start the official image with the documented 20 mounts.** Native `/init`, s6 and authentication/TLS remain in control; Host Entry runs non-root. Built assets and Historical's view of recordings are read-only. Native storage and the operational nginx copy remain separate.
-4. **Log in and open N → Live Monitor or Historical Verification.** For Historical, choose an authorized camera and a real Catalog-backed UTC interval, then inspect its actual findings and limitations.
+4. **Log in and open N → Live Monitor or Historical Verification.** For Historical, choose an authorized camera and a real Catalog-backed interval in the displayed timezone, then inspect its actual findings and limitations.
 
 Place the operator's public CA at **`$RUNTIME_ROOT/trust/ca.pem`** in the private runtime directory selected in the guide, mounted read-only at **`/nanexus/trust/ca.pem`**. **A single trusted CA certificate is sufficient for the current supported setup.** It is not bundled. Signing private keys stay on the signer; the runtime TLS key is a separate private transport identity.
 

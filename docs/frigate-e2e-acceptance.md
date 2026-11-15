@@ -50,7 +50,7 @@ Reconcile finalized Catalog rows with actual new retained files, their time cove
 
 ## 5. Submit one real Historical request
 
-Select one authorized camera and a real Catalog-backed UTC minute interval of at most 30 minutes. Click Verify once after recordings have finalized. The API supports fractional seconds; minute controls are not an exact fractional-segment selector. Never edit media or Catalog rows to fit the query. A lost POST response may still have created work, so do not blindly resubmit.
+Select one authorized camera and a real Catalog-backed minute interval in the displayed timezone of at most 30 actual minutes. Click Verify once after recordings have finalized. The API supports fractional seconds; minute controls are not an exact fractional-segment selector. Never edit media or Catalog rows to fit the query. A lost POST response may still have created work, so do not blindly resubmit.
 
 Observe actual API progress, selected Worker loading its own OMS and a terminal UI outcome. On timeout, use the existing cancellation/termination controls and report the incomplete result. No particular finding/color is required.
 

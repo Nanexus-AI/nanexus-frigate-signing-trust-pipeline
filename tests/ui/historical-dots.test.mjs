@@ -32,6 +32,7 @@ const catalog = { camA: ["DAY10"], camB: ["DAY12"] };
 const statusCalls = [];
 const holds = new Map();
 window.fetch = async (path) => {
+  if (path === "/api/config") return new Response(JSON.stringify({ui:{timezone:"UTC"}}), {status:200,headers:{"Content-Type":"application/json"}});
   if (path === "/__nanexus/session") {
     return json(200, { principal: "viewer", operations_available: true,
       cameras: [{ camera_id: "camA", display_name: "A" }, { camera_id: "camB", display_name: "B" }] });

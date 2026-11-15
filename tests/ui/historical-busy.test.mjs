@@ -18,6 +18,7 @@ async function busyMessage(running) {
   const window = dom.window;
   let verifies = 0;
   window.fetch = async (path) => {
+  if (path === "/api/config") return new Response(JSON.stringify({ui:{timezone:"UTC"}}), {status:200,headers:{"Content-Type":"application/json"}});
     if (path === "/__nanexus/session") {
       return responseFor(200, { principal: "admin", cameras: [{ camera_id: "cam1", display_name: "cam1" }], operations_available: true });
     }
