@@ -10,6 +10,8 @@ subsystem. Both listeners must share Frigate's loopback, which the accepted
 deployment provides with host networking.
 """
 import argparse
+from collections import deque
+import logging
 import hashlib
 import http.client
 import json
@@ -324,31 +326,61 @@ def load_config(path):
 def reader_command(executable, url):
     return (
         str(executable), '-hide_banner', '-nostdin', '-loglevel', 'error',
-        '-rtsp_transport', 'tcp', '-i', url,
+        '-rtsp_transport', 'tcp', '-timeout', '5000000', '-i', url,
         '-an', '-c:v', 'copy', '-f', 'h264', 'pipe:1',
     )
 
 
-class Feed:
-    """One ffmpeg reader, pipe, and observation source for one camera."""
+class _ProgressSource(FDObservationSource):
+    """Report receipt of bytes, independently of parser/signature outcomes."""
 
-    def __init__(self, name, command, poll, backoff_initial, backoff_max):
+    def __init__(self, fd, progress):
+        super().__init__(fd)
+        self.progress = progress
+
+    def next_event(self, now):
+        event = super().next_event(now)
+        if event is not None and event.kind == 'bytes':
+            self.progress()
+        return event
+
+
+class Feed:
+    """One generation-owned reader; serialized lifecycle, bounded byte watchdog.
+
+    State lock protects pipe ownership and receipt timestamps. Lifecycle lock
+    serializes spawn/reap/shutdown, never acquired by the scheduler factory.
+    Diagnostics are fixed codes only, internal to the host (no API exposure).
+    """
+
+    def __init__(self, name, command, poll, backoff_initial, backoff_max, *,
+                 startup_timeout=15.0, silence_timeout=15.0, clock=time.monotonic):
         self.name = name
         self.command = tuple(command)
         self.poll = poll
         self.backoff_initial = backoff_initial
         self.backoff_max = backoff_max
+        self.startup_timeout = startup_timeout
+        self.silence_timeout = silence_timeout
+        self.clock = clock
         self.lock = threading.Lock()
+        self.lifecycle = threading.RLock()
         self.write = None
         self.proc = None
         self.proc_gen = None
         self.generation = 0
         self.started_at = 0.0
+        self.last_byte = None
         self.backoff = 0.0
         self.next_start = 0.0
         self.stop_event = threading.Event()
         self.failures = 0
+        self.events = deque(maxlen=32)
         self.thread = None
+
+    def _event(self, code):
+        self.events.append(code)
+        logging.getLogger(__name__).warning('live-reader:%s', code)
 
     def factory(self, binding):
         if binding.camera.value != self.name:
@@ -356,116 +388,141 @@ class Feed:
         read_fd, write_fd = os.pipe()
         os.set_blocking(write_fd, False)
         with self.lock:
-            previous, self.write = self.write, write_fd
+            if self.stop_event.is_set():
+                self._close(read_fd)
+                self._close(write_fd)
+                raise OSError('feed stopped')
+            self._close(self.write)
+            self.write = write_fd
             self.generation += 1
-        if previous is not None:
-            os.close(previous)
-        return FDObservationSource(read_fd)
+            generation = self.generation
+            self.last_byte = None
+
+        def progress():
+            with self.lock:
+                if generation == self.generation:
+                    self.last_byte = self.clock()
+
+        return _ProgressSource(read_fd, progress)
 
     def _close(self, fd):
-        if fd is None:
-            return
-        try:
-            os.close(fd)
-        except OSError:
-            pass
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
 
     def _signal(self, proc, sig):
         try:
             os.killpg(proc.pid, sig)
-        except (ProcessLookupError, PermissionError, OSError):
+        except OSError:
             try:
                 proc.send_signal(sig)
             except OSError:
                 pass
 
-    def _stop_proc(self):
-        with self.lock:
-            proc = self.proc
-            generation = self.proc_gen
-            self.proc = None
-            self.proc_gen = None
-            close_fd = None
-            if proc is not None and generation == self.generation and self.write is not None:
-                close_fd = self.write
-                self.write = None
-        if proc is not None and proc.poll() is None:
+    def _terminate(self, proc):
+        if proc.poll() is None:
             self._signal(proc, signal.SIGTERM)
             try:
                 proc.wait(timeout=2)
             except subprocess.TimeoutExpired:
+                self._event('forced-termination')
                 self._signal(proc, signal.SIGKILL)
                 proc.wait(timeout=1)
-        self._close(close_fd)
+        else:
+            proc.wait(timeout=0)
+
+    def _stop_proc(self):
+        with self.lifecycle:
+            # Keep ownership until reaped: failed termination cannot permit a
+            # second child. Never wait while holding the scheduler's state lock.
+            proc = self.proc
+            if proc is not None:
+                self._terminate(proc)
+            with self.lock:
+                if proc is not None and self.proc_gen == self.generation:
+                    self._close(self.write)
+                    self.write = None
+                self.proc = None
+                self.proc_gen = None
+
+    def _retry(self, healthy=False):
+        self.backoff = (self.backoff_initial if healthy else min(
+            self.backoff_max, self.backoff * 2 if self.backoff else self.backoff_initial))
+        self.next_start = self.clock() + self.backoff
+        self.failures += 1
+        self._event('backoff')
 
     def _reap(self):
-        with self.lock:
-            proc = self.proc
-            generation = self.proc_gen
-            started = self.started_at
-        if proc is None or proc.poll() is None:
+        # Called with lifecycle held, including by tests through _once.
+        proc = self.proc
+        if proc is None:
             return
         with self.lock:
-            if self.proc is not proc:
-                return
-            self.proc = None
-            self.proc_gen = None
-            close_fd = None
-            if generation == self.generation and self.write is not None:
-                close_fd = self.write
-                self.write = None
-        self._close(close_fd)
-        lived = time.monotonic() - started if started else 0
-        if lived < 2:
-            self.backoff = min(self.backoff_max, self.backoff * 2 if self.backoff else self.backoff_initial)
-            self.failures += 1
-        else:
-            self.backoff = self.backoff_initial
-        self.next_start = time.monotonic() + self.backoff
+            stale = self.proc_gen != self.generation
+            last_byte = self.last_byte
+        now = self.clock()
+        reason = None
+        if proc.poll() is not None:
+            reason = 'child-exit'
+        elif stale:
+            reason = 'stale-generation'
+        elif last_byte is None and now - self.started_at >= self.startup_timeout:
+            reason = 'startup-timeout'
+        elif last_byte is not None and now - last_byte >= self.silence_timeout:
+            reason = 'no-byte-timeout'
+        if reason is None:
+            return
+        self._event(reason)
+        healthy = not stale and last_byte is not None and now - self.started_at >= 2
+        self._stop_proc()
+        self._retry(healthy)
 
     def _once(self):
-        self._reap()
-        if time.monotonic() < self.next_start:
-            return
-        with self.lock:
-            write = self.write
-            generation = self.generation
-            running = self.proc is not None and self.proc.poll() is None
-        if write is None or running:
-            return
-        proc = subprocess.Popen(
-            self.command, stdout=write, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
-            start_new_session=True)
-        with self.lock:
-            running = self.proc is not None and self.proc.poll() is None
-            keep = (self.generation == generation and self.write == write
-                    and not self.stop_event.is_set() and not running)
-            if keep:
-                self.proc = proc
-                self.proc_gen = generation
-                self.started_at = time.monotonic()
-                proc = None
-        if proc is not None:
-            if proc.poll() is None:
-                self._signal(proc, signal.SIGTERM)
-                try:
-                    proc.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    self._signal(proc, signal.SIGKILL)
-                    proc.wait(timeout=1)
+        with self.lifecycle:
+            self._reap()
+            if self.stop_event.is_set() or self.clock() < self.next_start:
+                return
+            with self.lock:
+                if self.write is None or self.proc is not None:
+                    return
+                # Dup under lock prevents factory close/FD reuse racing Popen.
+                write = os.dup(self.write)
+                generation = self.generation
+            try:
+                proc = subprocess.Popen(
+                    self.command, stdout=write, stderr=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL, start_new_session=True)
+            finally:
+                self._close(write)
+            # Record even an obsolete spawn so cleanup failure retains ownership.
+            self.proc = proc
+            self.proc_gen = generation
+            self.started_at = self.clock()
+            with self.lock:
+                keep = generation == self.generation and not self.stop_event.is_set()
+            if not keep:
+                self._event('stale-generation')
+                self._stop_proc()
+                self._retry()
+            else:
+                self._event('reader-start')
 
     def loop(self):
         while not self.stop_event.is_set():
             try:
                 self._once()
             except Exception:
-                self.failures += 1
-                self._stop_proc()
-                self.backoff = min(self.backoff_max, self.backoff * 2 if self.backoff else self.backoff_initial)
-                self.next_start = time.monotonic() + self.backoff
-                if self.stop_event.wait(self.backoff):
-                    return
-                continue
+                self._event('reader-failure')
+                # Retain a child whose bounded termination failed; retry cleanup
+                # on the next iteration, rather than launching another child.
+                with self.lifecycle:
+                    try:
+                        self._stop_proc()
+                    except subprocess.TimeoutExpired:
+                        pass
+                    self._retry()
             if self.stop_event.wait(self.poll):
                 return
 
@@ -475,9 +532,15 @@ class Feed:
 
     def stop(self):
         self.stop_event.set()
-        self._stop_proc()
+        with self.lifecycle:
+            self._stop_proc()
+            with self.lock:
+                self._close(self.write)
+                self.write = None
         if self.thread is not None:
             self.thread.join(timeout=3)
+            if self.thread.is_alive():
+                raise RuntimeError('reader shutdown incomplete')
 
 
 class BindingResolver:
@@ -626,7 +689,8 @@ def start(config):
         feeds = {
             item['camera']: Feed(
                 item['camera'], reader_command(config['ffmpeg'], item['rtsp_url']),
-                config['poll_seconds'], config['backoff_initial_seconds'], config['backoff_max_seconds'])
+                config['poll_seconds'], config['backoff_initial_seconds'], config['backoff_max_seconds'],
+                silence_timeout=max(15.0, float(policy.media_silence_limit)))
             for item in config['cameras']
         }
         mappings = tuple(
